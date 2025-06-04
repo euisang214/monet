@@ -25,7 +25,7 @@ interface SearchFilters {
   minExperience: number;
 }
 
-export default function CandidateSearch({ candidateId }: { candidateId: string }) {
+export default function CandidateSearch() {
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [filteredProfessionals, setFilteredProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +45,54 @@ export default function CandidateSearch({ candidateId }: { candidateId: string }
   }, []);
 
   useEffect(() => {
-    filterProfessionals();
+    let filtered = professionals;
+
+    // Text search
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(pro =>
+        pro.name.toLowerCase().includes(query) ||
+        pro.title.toLowerCase().includes(query) ||
+        pro.company.toLowerCase().includes(query) ||
+        pro.bio.toLowerCase().includes(query) ||
+        pro.expertise.some(exp => exp.toLowerCase().includes(query))
+      );
+    }
+
+    // Industry filter
+    if (filters.industry) {
+      filtered = filtered.filter(pro =>
+        pro.industry.toLowerCase().includes(filters.industry.toLowerCase())
+      );
+    }
+
+    // Company filter
+    if (filters.company) {
+      filtered = filtered.filter(pro =>
+        pro.company.toLowerCase().includes(filters.company.toLowerCase())
+      );
+    }
+
+    // Expertise filter
+    if (filters.expertise) {
+      filtered = filtered.filter(pro =>
+        pro.expertise.some(exp =>
+          exp.toLowerCase().includes(filters.expertise.toLowerCase())
+        )
+      );
+    }
+
+    // Rate filter
+    filtered = filtered.filter(pro =>
+      pro.sessionRateCents <= filters.maxRate * 100
+    );
+
+    // Experience filter
+    filtered = filtered.filter(pro =>
+      pro.yearsExperience >= filters.minExperience
+    );
+
+    setFilteredProfessionals(filtered);
   }, [professionals, searchQuery, filters]);
 
   const fetchProfessionals = async () => {
@@ -61,57 +108,6 @@ export default function CandidateSearch({ candidateId }: { candidateId: string }
     } finally {
       setLoading(false);
     }
-  };
-
-  const filterProfessionals = () => {
-    let filtered = professionals;
-
-    // Text search
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(pro => 
-        pro.name.toLowerCase().includes(query) ||
-        pro.title.toLowerCase().includes(query) ||
-        pro.company.toLowerCase().includes(query) ||
-        pro.bio.toLowerCase().includes(query) ||
-        pro.expertise.some(exp => exp.toLowerCase().includes(query))
-      );
-    }
-
-    // Industry filter
-    if (filters.industry) {
-      filtered = filtered.filter(pro => 
-        pro.industry.toLowerCase().includes(filters.industry.toLowerCase())
-      );
-    }
-
-    // Company filter
-    if (filters.company) {
-      filtered = filtered.filter(pro => 
-        pro.company.toLowerCase().includes(filters.company.toLowerCase())
-      );
-    }
-
-    // Expertise filter
-    if (filters.expertise) {
-      filtered = filtered.filter(pro => 
-        pro.expertise.some(exp => 
-          exp.toLowerCase().includes(filters.expertise.toLowerCase())
-        )
-      );
-    }
-
-    // Rate filter
-    filtered = filtered.filter(pro => 
-      pro.sessionRateCents <= filters.maxRate * 100
-    );
-
-    // Experience filter
-    filtered = filtered.filter(pro => 
-      pro.yearsExperience >= filters.minExperience
-    );
-
-    setFilteredProfessionals(filtered);
   };
 
   const handleBookSession = (professional: Professional) => {
@@ -349,7 +345,7 @@ export default function CandidateSearch({ candidateId }: { candidateId: string }
                 </div>
                 <div className="space-y-4">
                   <div className="text-left">
-                    <h4 className="font-semibold text-gray-900 mb-2">What you'll get:</h4>
+                    <h4 className="font-semibold text-gray-900 mb-2">What you&apos;ll get:</h4>
                     <ul className="text-sm text-gray-600 space-y-1">
                       <li>• 30-minute video call</li>
                       <li>• Professional feedback</li>
