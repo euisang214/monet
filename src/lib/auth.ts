@@ -27,7 +27,7 @@ export const authOptions: NextAuthOptions = {
   ],
   
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account }) {
       if (!user.email) {
         console.error('No email provided by OAuth provider');
         return false;
@@ -74,7 +74,7 @@ export const authOptions: NextAuthOptions = {
       }
     },
 
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       if (user) {
         await connectDB();
         const dbUser = await User.findOne({ email: user.email });
@@ -110,7 +110,7 @@ export const authOptions: NextAuthOptions = {
 /**
  * Get current user from session
  */
-export async function getCurrentUser(req: any): Promise<any | null> {
+export async function getCurrentUser(): Promise<unknown | null> {
   try {
     // This would typically use getServerSession in a real app
     // For now, return null to indicate no auth implemented yet
