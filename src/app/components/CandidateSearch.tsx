@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 interface Professional {
   _id: string;
@@ -25,7 +26,7 @@ interface SearchFilters {
   minExperience: number;
 }
 
-export default function CandidateSearch() {
+export default function CandidateSearch({ candidateId }: { candidateId: string }) {
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [filteredProfessionals, setFilteredProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,54 +46,7 @@ export default function CandidateSearch() {
   }, []);
 
   useEffect(() => {
-    let filtered = professionals;
-
-    // Text search
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(pro =>
-        pro.name.toLowerCase().includes(query) ||
-        pro.title.toLowerCase().includes(query) ||
-        pro.company.toLowerCase().includes(query) ||
-        pro.bio.toLowerCase().includes(query) ||
-        pro.expertise.some(exp => exp.toLowerCase().includes(query))
-      );
-    }
-
-    // Industry filter
-    if (filters.industry) {
-      filtered = filtered.filter(pro =>
-        pro.industry.toLowerCase().includes(filters.industry.toLowerCase())
-      );
-    }
-
-    // Company filter
-    if (filters.company) {
-      filtered = filtered.filter(pro =>
-        pro.company.toLowerCase().includes(filters.company.toLowerCase())
-      );
-    }
-
-    // Expertise filter
-    if (filters.expertise) {
-      filtered = filtered.filter(pro =>
-        pro.expertise.some(exp =>
-          exp.toLowerCase().includes(filters.expertise.toLowerCase())
-        )
-      );
-    }
-
-    // Rate filter
-    filtered = filtered.filter(pro =>
-      pro.sessionRateCents <= filters.maxRate * 100
-    );
-
-    // Experience filter
-    filtered = filtered.filter(pro =>
-      pro.yearsExperience >= filters.minExperience
-    );
-
-    setFilteredProfessionals(filtered);
+    filterProfessionals();
   }, [professionals, searchQuery, filters]);
 
   const fetchProfessionals = async () => {
@@ -108,6 +62,57 @@ export default function CandidateSearch() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const filterProfessionals = () => {
+    let filtered = professionals;
+
+    // Text search
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(pro => 
+        pro.name.toLowerCase().includes(query) ||
+        pro.title.toLowerCase().includes(query) ||
+        pro.company.toLowerCase().includes(query) ||
+        pro.bio.toLowerCase().includes(query) ||
+        pro.expertise.some(exp => exp.toLowerCase().includes(query))
+      );
+    }
+
+    // Industry filter
+    if (filters.industry) {
+      filtered = filtered.filter(pro => 
+        pro.industry.toLowerCase().includes(filters.industry.toLowerCase())
+      );
+    }
+
+    // Company filter
+    if (filters.company) {
+      filtered = filtered.filter(pro => 
+        pro.company.toLowerCase().includes(filters.company.toLowerCase())
+      );
+    }
+
+    // Expertise filter
+    if (filters.expertise) {
+      filtered = filtered.filter(pro => 
+        pro.expertise.some(exp => 
+          exp.toLowerCase().includes(filters.expertise.toLowerCase())
+        )
+      );
+    }
+
+    // Rate filter
+    filtered = filtered.filter(pro => 
+      pro.sessionRateCents <= filters.maxRate * 100
+    );
+
+    // Experience filter
+    filtered = filtered.filter(pro => 
+      pro.yearsExperience >= filters.minExperience
+    );
+
+    setFilteredProfessionals(filtered);
   };
 
   const handleBookSession = (professional: Professional) => {
@@ -132,251 +137,342 @@ export default function CandidateSearch() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Finding professionals for you...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Find Your Mentor</h1>
-        <p className="text-gray-600">
-          Connect with experienced professionals for career guidance and interview prep
-        </p>
-      </div>
-
-      {/* Search and Filters */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-        <div className="grid grid-cols-1 lg:grid-cols-6 gap-4">
-          {/* Search Input */}
-          <div className="lg:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Search
-            </label>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Name, title, company, or skills..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Industry Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Industry
-            </label>
-            <input
-              type="text"
-              value={filters.industry}
-              onChange={(e) => setFilters(prev => ({ ...prev, industry: e.target.value }))}
-              placeholder="Tech, Finance..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Company Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Company
-            </label>
-            <input
-              type="text"
-              value={filters.company}
-              onChange={(e) => setFilters(prev => ({ ...prev, company: e.target.value }))}
-              placeholder="Google, Meta..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Max Rate Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Max Rate
-            </label>
-            <select
-              value={filters.maxRate}
-              onChange={(e) => setFilters(prev => ({ ...prev, maxRate: parseInt(e.target.value) }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value={2500}>$25+</option>
-              <option value={5000}>$50+</option>
-              <option value={10000}>$100+</option>
-              <option value={15000}>$150+</option>
-              <option value={20000}>$200+</option>
-            </select>
-          </div>
-
-          {/* Experience Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Min Experience
-            </label>
-            <select
-              value={filters.minExperience}
-              onChange={(e) => setFilters(prev => ({ ...prev, minExperience: parseInt(e.target.value) }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value={0}>Any</option>
-              <option value={2}>2+ years</option>
-              <option value={5}>5+ years</option>
-              <option value={10}>10+ years</option>
-              <option value={15}>15+ years</option>
-            </select>
+    <div className="min-h-screen bg-gray-50">
+      {/* Navigation */}
+      <nav className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+                <Link href="/" className="text-2xl font-bold text-indigo-600">
+                  Monet
+                </Link>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-gray-600">Candidate Dashboard</span>
+            </div>
           </div>
         </div>
-      </div>
+      </nav>
 
-      {/* Results */}
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {filteredProfessionals.length} Professionals Found
-          </h2>
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Find Your Mentor</h1>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Connect with experienced professionals for career guidance and interview prep. 
+            Get personalized advice from industry experts.
+          </p>
         </div>
 
-        {filteredProfessionals.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-gray-500 text-lg">No professionals found matching your criteria</div>
-            <p className="text-gray-400 mt-2">Try adjusting your filters</p>
+        {/* Search and Filters */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-6 gap-4">
+            {/* Search Input */}
+            <div className="lg:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Search
+              </label>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Name, title, company, or skills..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Industry Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Industry
+              </label>
+              <input
+                type="text"
+                value={filters.industry}
+                onChange={(e) => setFilters(prev => ({ ...prev, industry: e.target.value }))}
+                placeholder="Tech, Finance..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Company Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Company
+              </label>
+              <input
+                type="text"
+                value={filters.company}
+                onChange={(e) => setFilters(prev => ({ ...prev, company: e.target.value }))}
+                placeholder="Google, Meta..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Max Rate Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Max Rate
+              </label>
+              <select
+                value={filters.maxRate}
+                onChange={(e) => setFilters(prev => ({ ...prev, maxRate: parseInt(e.target.value) }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value={2500}>$25+</option>
+                <option value={5000}>$50+</option>
+                <option value={10000}>$100+</option>
+                <option value={15000}>$150+</option>
+                <option value={20000}>$200+</option>
+              </select>
+            </div>
+
+            {/* Experience Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Min Experience
+              </label>
+              <select
+                value={filters.minExperience}
+                onChange={(e) => setFilters(prev => ({ ...prev, minExperience: parseInt(e.target.value) }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value={0}>Any</option>
+                <option value={2}>2+ years</option>
+                <option value={5}>5+ years</option>
+                <option value={10}>10+ years</option>
+                <option value={15}>15+ years</option>
+              </select>
+            </div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProfessionals.map((pro) => (
-              <div key={pro._id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-                <div className="p-6">
-                  <div className="flex items-start space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-                      {pro.name.charAt(0)}
+        </div>
+
+        {/* Results */}
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-gray-900">
+              {filteredProfessionals.length} Professionals Found
+            </h2>
+            <div className="text-sm text-gray-500">
+              Showing {filteredProfessionals.length} results
+            </div>
+          </div>
+
+          {filteredProfessionals.length === 0 ? (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+              <div className="text-gray-400 text-6xl mb-4">🔍</div>
+              <div className="text-gray-500 text-lg mb-2">No professionals found matching your criteria</div>
+              <p className="text-gray-400">Try adjusting your filters or search terms</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProfessionals.map((pro) => (
+                <div key={pro._id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200 hover:border-indigo-200">
+                  <div className="p-6">
+                    <div className="flex items-start space-x-4 mb-4">
+                      <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                        {pro.name.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-gray-900 text-lg truncate mb-1">
+                          {pro.name}
+                        </h3>
+                        <p className="text-gray-600 text-sm truncate mb-1">
+                          {pro.title}
+                        </p>
+                        <p className="text-indigo-600 text-sm font-medium truncate">
+                          {pro.company}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 truncate">
-                        {pro.name}
-                      </h3>
-                      <p className="text-sm text-gray-600 truncate">
-                        {pro.title} at {pro.company}
+
+                    <div className="mb-4">
+                      <div className="flex items-center text-xs text-gray-500 mb-2 space-x-4">
+                        <span>{pro.yearsExperience} years experience</span>
+                        <span>•</span>
+                        <span>{pro.industry}</span>
+                      </div>
+                      <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed">
+                        {pro.bio}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {pro.yearsExperience} years • {pro.industry}
-                      </p>
+                    </div>
+
+                    {/* Expertise Tags */}
+                    <div className="mb-4">
+                      <div className="flex flex-wrap gap-1.5">
+                        {pro.expertise.slice(0, 3).map((skill, index) => (
+                          <span
+                            key={index}
+                            className="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs rounded-md font-medium"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                        {pro.expertise.length > 3 && (
+                          <span className="px-2 py-1 bg-gray-50 text-gray-600 text-xs rounded-md">
+                            +{pro.expertise.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Rating and Stats */}
+                    <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex">
+                          {renderStars(pro.averageRating || 0)}
+                        </div>
+                        {pro.averageRating && pro.averageRating > 0 && (
+                          <span className="text-xs text-gray-500">
+                            ({pro.averageRating.toFixed(1)})
+                          </span>
+                        )}
+                        {pro.totalSessions && (
+                          <span className="text-xs text-gray-400">
+                            • {pro.totalSessions} sessions
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Price and CTA */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-2xl font-bold text-gray-900">
+                          ${(pro.sessionRateCents / 100).toFixed(0)}
+                        </div>
+                        <div className="text-xs text-gray-500">per 30-min session</div>
+                      </div>
+                      <button
+                        onClick={() => handleBookSession(pro)}
+                        className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold text-sm"
+                      >
+                        Book Session
+                      </button>
                     </div>
                   </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-                  <div className="mt-4">
-                    <p className="text-sm text-gray-600 line-clamp-3">
-                      {pro.bio}
+        {/* Booking Modal */}
+        {showBookingModal && selectedPro && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                    {selectedPro.name.charAt(0)}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">
+                      Book Session with {selectedPro.name}
+                    </h3>
+                    <p className="text-gray-600">
+                      {selectedPro.title} at {selectedPro.company}
                     </p>
                   </div>
-
-                  {/* Expertise Tags */}
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {pro.expertise.slice(0, 3).map((skill, index) => (
-                      <span
-                        key={index}
-                        className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                    {pro.expertise.length > 3 && (
-                      <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                        +{pro.expertise.length - 3} more
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Rating and Stats */}
-                  <div className="mt-4 flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div className="flex">
-                        {renderStars(pro.averageRating || 0)}
-                      </div>
-                      {pro.totalSessions && (
-                        <span className="text-xs text-gray-500">
-                          ({pro.totalSessions} sessions)
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold text-gray-900">
-                        ${(pro.sessionRateCents / 100).toFixed(0)}
-                      </div>
-                      <div className="text-xs text-gray-500">per session</div>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => handleBookSession(pro)}
-                    className="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors font-medium"
-                  >
-                    Book Session
-                  </button>
                 </div>
               </div>
-            ))}
+              
+              <div className="px-6 py-6">
+                <div className="text-center mb-6">
+                  <div className="text-3xl font-bold text-indigo-600 mb-2">
+                    ${(selectedPro.sessionRateCents / 100).toFixed(2)}
+                  </div>
+                  <div className="text-gray-600 mb-4">
+                    30-minute video session
+                  </div>
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-start space-x-3">
+                    <div className="text-amber-600 mt-0.5">⚠️</div>
+                    <div>
+                      <h4 className="font-semibold text-amber-800 mb-1">Development Notice</h4>
+                      <p className="text-sm text-amber-700">
+                        Booking system integration is in development. This will integrate with Stripe Checkout and calendar scheduling.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-900 mb-3">What you'll get:</h4>
+                    <ul className="text-sm text-gray-600 space-y-2">
+                      <li className="flex items-center space-x-2">
+                        <span className="text-green-500">✓</span>
+                        <span>30-minute video call</span>
+                      </li>
+                      <li className="flex items-center space-x-2">
+                        <span className="text-green-500">✓</span>
+                        <span>Professional feedback</span>
+                      </li>
+                      <li className="flex items-center space-x-2">
+                        <span className="text-green-500">✓</span>
+                        <span>Career advice and insights</span>
+                      </li>
+                      <li className="flex items-center space-x-2">
+                        <span className="text-green-500">✓</span>
+                        <span>Opportunity for referrals</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-indigo-50 rounded-lg p-4">
+                    <h4 className="font-semibold text-indigo-900 mb-3">About {selectedPro.name}:</h4>
+                    <div className="text-sm text-indigo-800 space-y-1">
+                      <p><strong>Experience:</strong> {selectedPro.yearsExperience} years</p>
+                      <p><strong>Industry:</strong> {selectedPro.industry}</p>
+                      <div>
+                        <strong>Expertise:</strong>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {selectedPro.expertise.slice(0, 4).map((skill, index) => (
+                            <span key={index} className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs rounded">
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3 bg-gray-50">
+                <button
+                  onClick={() => setShowBookingModal(false)}
+                  className="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    // TODO: Implement actual booking with Stripe
+                    alert('Booking system integration coming soon!');
+                    setShowBookingModal(false);
+                  }}
+                  className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold transition-colors"
+                >
+                  Proceed to Payment
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
-
-      {/* Booking Modal */}
-      {showBookingModal && selectedPro && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Book Session with {selectedPro.name}
-              </h3>
-            </div>
-            <div className="px-6 py-4">
-              <div className="text-center py-8">
-                <div className="text-2xl font-bold text-gray-900 mb-2">
-                  ${(selectedPro.sessionRateCents / 100).toFixed(2)}
-                </div>
-                <div className="text-gray-600 mb-6">
-                  30-minute session
-                </div>
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                  <p className="text-sm text-yellow-800">
-                    Booking system integration coming soon! This will integrate with Stripe Checkout and calendar scheduling.
-                  </p>
-                </div>
-                <div className="space-y-4">
-                  <div className="text-left">
-                    <h4 className="font-semibold text-gray-900 mb-2">What you&apos;ll get:</h4>
-                    <ul className="text-sm text-gray-600 space-y-1">
-                      <li>• 30-minute video call</li>
-                      <li>• Professional feedback</li>
-                      <li>• Career advice and insights</li>
-                      <li>• Opportunity for referrals</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
-              <button
-                onClick={() => setShowBookingModal(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  // TODO: Implement actual booking with Stripe
-                  alert('Booking system integration coming soon!');
-                  setShowBookingModal(false);
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                Proceed to Payment
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

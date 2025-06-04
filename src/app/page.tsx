@@ -9,7 +9,9 @@ export default function Home() {
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <h1 className="text-2xl font-bold text-indigo-600">Monet</h1>
+                <Link href="/" className="text-2xl font-bold text-indigo-600">
+                  Monet
+                </Link>
               </div>
             </div>
             <div className="flex items-center space-x-4">
