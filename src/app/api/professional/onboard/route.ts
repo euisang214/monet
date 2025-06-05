@@ -8,22 +8,31 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 interface OnboardProfessionalRequest {
+  // Step 1: Verification
+  workEmail: string;
+  linkedinUrl: string;
+  resumeFile?: string; // Base64 or file URL after upload
+  
+  // Step 2: Profile
   name: string;
-  email: string;
   title: string;
   company: string;
   industry: string;
   yearsExperience: number;
   bio: string;
-  expertise: string[];
   sessionRateCents: number;
-  linkedinUrl?: string;
+  profilePicture?: string; // Base64 or file URL after upload
+  
+  // Step 3: Banking (optional)
+  bankingInfo?: string;
+  
+  // Additional fields
   referredBy?: string;
 }
 
 /**
- * POST /api/professionals/onboard
- * Complete professional onboarding and create Stripe Connect account
+ * POST /api/professional/onboard
+ * Complete professional onboarding with Phase 5 data structure
  */
 export async function POST(request: NextRequest) {
   try {
@@ -31,23 +40,25 @@ export async function POST(request: NextRequest) {
     
     const body: OnboardProfessionalRequest = await request.json();
     const {
+      workEmail,
+      linkedinUrl,
+      resumeFile,
       name,
-      email,
       title,
       company,
       industry,
       yearsExperience,
       bio,
-      expertise,
       sessionRateCents,
-      linkedinUrl,
+      profilePicture,
+      bankingInfo,
       referredBy
     } = body;
 
     // Validate required fields
-    if (!name || !email || !title || !company || !industry || !bio || !expertise.length || !sessionRateCents) {
+    if (!workEmail || !name || !title || !company || !industry || !bio || !sessionRateCents) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields: workEmail, name, title, company, industry, bio, sessionRateCents' },
         { status: 400 }
       );
     }
@@ -59,13 +70,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (expertise.length === 0) {
-      return NextResponse.json(
-        { error: 'At least one area of expertise is required' },
-        { status: 400 }
-      );
-    }
-
     if (yearsExperience < 0) {
       return NextResponse.json(
         { error: 'Years of experience must be non-negative' },
@@ -73,8 +77,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user already exists
-    let user = await User.findOne({ email });
+    // Check if user already exists with work email
+    let user = await User.findOne({ 
+      $or: [
+        { workEmail },
+        { email: workEmail }
+      ]
+    });
     
     if (user && user.role === 'professional') {
       return NextResponse.json(
@@ -89,7 +98,8 @@ export async function POST(request: NextRequest) {
       const referrer = await User.findOne({
         $or: [
           { _id: referredBy },
-          { email: referredBy }
+          { email: referredBy },
+          { workEmail: referredBy }
         ],
         role: 'professional'
       });
@@ -102,8 +112,8 @@ export async function POST(request: NextRequest) {
     // Create Stripe Connect account
     const stripeAccount = await stripe.accounts.create({
       type: 'express',
-      country: 'US', // TODO: Make this configurable
-      email,
+      country: 'US', // TODO: Make this configurable based on work email domain
+      email: workEmail,
       capabilities: {
         card_payments: { requested: true },
         transfers: { requested: true }
@@ -112,39 +122,53 @@ export async function POST(request: NextRequest) {
       individual: {
         first_name: name.split(' ')[0],
         last_name: name.split(' ').slice(1).join(' ') || name.split(' ')[0],
-        email
+        email: workEmail
       },
       business_profile: {
         mcc: '8299', // Educational services
-        product_description: 'Professional mentoring and career consultation services'
+        product_description: 'Professional mentoring and career consultation services',
+        url: linkedinUrl || undefined
       },
       metadata: {
         platform_user_id: user?._id?.toString() || 'pending',
-        user_email: email,
+        user_email: workEmail,
         company,
-        title
+        title,
+        signup_source: 'phase5_onboarding'
       }
     });
 
     // Create or update user
     if (user) {
-      // Update existing candidate to professional
+      // Update existing user to professional
       user.role = 'professional';
+      user.workEmail = workEmail;
+      user.workEmailVerified = false; // Will be verified via email
       user.name = name;
       user.title = title;
       user.company = company;
       user.industry = industry;
       user.yearsExperience = yearsExperience;
       user.bio = bio;
-      user.expertise = expertise;
       user.sessionRateCents = sessionRateCents;
       user.linkedinUrl = linkedinUrl;
       user.stripeAccountId = stripeAccount.id;
+      user.stripeAccountVerified = false;
       user.referredBy = referrerProId;
+      
+      // Handle file uploads
+      if (resumeFile) {
+        user.resumeUrl = resumeFile; // Store file URL after upload
+      }
+      if (profilePicture) {
+        user.profileImageUrl = profilePicture; // Store image URL after upload
+      }
     } else {
       // Create new professional user
       user = new User({
-        email,
+        email: workEmail, // Use work email as primary email
+        workEmail,
+        workEmailVerified: false,
         name,
         role: 'professional',
         title,
@@ -152,11 +176,13 @@ export async function POST(request: NextRequest) {
         industry,
         yearsExperience,
         bio,
-        expertise,
         sessionRateCents,
         linkedinUrl,
         stripeAccountId: stripeAccount.id,
-        referredBy: referrerProId
+        stripeAccountVerified: false,
+        referredBy: referrerProId,
+        resumeUrl: resumeFile,
+        profileImageUrl: profilePicture
       });
     }
 
@@ -173,12 +199,15 @@ export async function POST(request: NextRequest) {
     // Create Stripe account link for onboarding
     const accountLink = await stripe.accountLinks.create({
       account: stripeAccount.id,
-      refresh_url: `${process.env.NEXTAUTH_URL}/professional/onboard/refresh`,
+      refresh_url: `${process.env.NEXTAUTH_URL}/auth/signup/professional?step=3&refresh=true`,
       return_url: `${process.env.NEXTAUTH_URL}/professional/dashboard`,
       type: 'account_onboarding'
     });
 
-    console.log('Professional onboarded:', user._id, 'Stripe account:', stripeAccount.id);
+    console.log('Professional onboarded (Phase 5):', user._id, 'Stripe account:', stripeAccount.id);
+
+    // TODO: Send work email verification email
+    // await sendWorkEmailVerification(workEmail, user._id);
 
     return NextResponse.json({
       success: true,
@@ -186,12 +215,13 @@ export async function POST(request: NextRequest) {
         userId: user._id,
         stripeAccountId: stripeAccount.id,
         stripeOnboardingUrl: accountLink.url,
-        message: 'Onboarding initiated successfully'
+        emailVerificationRequired: true,
+        message: 'Onboarding initiated successfully. Please check your work email for verification.'
       }
     });
 
   } catch (error) {
-    console.error('Professional onboarding error:', error);
+    console.error('Professional onboarding error (Phase 5):', error);
     
     // Handle Stripe-specific errors
     if (error instanceof Stripe.errors.StripeError) {
@@ -209,8 +239,8 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * GET /api/professionals/onboard?email=xxx
- * Check onboarding status for a professional
+ * GET /api/professional/onboard?email=xxx
+ * Check onboarding status for a professional (updated for Phase 5)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -218,16 +248,22 @@ export async function GET(request: NextRequest) {
     
     const { searchParams } = new URL(request.url);
     const email = searchParams.get('email');
+    const workEmail = searchParams.get('workEmail');
 
-    if (!email) {
+    if (!email && !workEmail) {
       return NextResponse.json(
-        { error: 'Email parameter is required' },
+        { error: 'Email or workEmail parameter is required' },
         { status: 400 }
       );
     }
 
-    const user = await User.findOne({ email, role: 'professional' })
-      .select('name email stripeAccountId sessionRateCents title company');
+    const user = await User.findOne({ 
+      $or: [
+        { email: email || workEmail },
+        { workEmail: email || workEmail }
+      ],
+      role: 'professional' 
+    }).select('name email workEmail workEmailVerified stripeAccountId stripeAccountVerified sessionRateCents title company');
 
     if (!user) {
       return NextResponse.json(
@@ -258,17 +294,89 @@ export async function GET(request: NextRequest) {
           id: user._id,
           name: user.name,
           email: user.email,
+          workEmail: user.workEmail,
+          workEmailVerified: user.workEmailVerified,
           title: user.title,
           company: user.company,
           sessionRate: user.sessionRateCents / 100
         },
         stripeAccountStatus,
-        isFullyOnboarded: stripeAccountStatus?.chargesEnabled && stripeAccountStatus?.payoutsEnabled
+        isFullyOnboarded: user.workEmailVerified && 
+                         stripeAccountStatus?.chargesEnabled && 
+                         stripeAccountStatus?.payoutsEnabled,
+        verificationSteps: {
+          workEmailVerified: user.workEmailVerified,
+          stripeAccountSetup: stripeAccountStatus?.detailsSubmitted || false,
+          paymentsEnabled: stripeAccountStatus?.chargesEnabled || false
+        }
       }
     });
 
   } catch (error) {
-    console.error('Check onboarding status error:', error);
+    console.error('Check onboarding status error (Phase 5):', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PUT /api/professional/onboard
+ * Update professional profile after initial onboarding
+ */
+export async function PUT(request: NextRequest) {
+  try {
+    await connectDB();
+    
+    const body = await request.json();
+    const { userId, ...updates } = body;
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const user = await User.findById(userId);
+    if (!user || user.role !== 'professional') {
+      return NextResponse.json(
+        { error: 'Professional not found' },
+        { status: 404 }
+      );
+    }
+
+    // Update allowed fields
+    const allowedUpdates = [
+      'name', 'title', 'company', 'industry', 'yearsExperience', 
+      'bio', 'sessionRateCents', 'linkedinUrl', 'profileImageUrl', 'resumeUrl'
+    ];
+
+    for (const [key, value] of Object.entries(updates)) {
+      if (allowedUpdates.includes(key)) {
+        (user as any)[key] = value;
+      }
+    }
+
+    await user.save();
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        message: 'Profile updated successfully',
+        user: {
+          id: user._id,
+          name: user.name,
+          title: user.title,
+          company: user.company,
+          sessionRate: user.sessionRateCents / 100
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Update professional profile error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

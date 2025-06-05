@@ -25,10 +25,25 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-
 /* Ensure form fields use black text for better readability */
 input,
 textarea,
 select {
   color: #000;
+}
+
+/* Custom animations for smooth physics-based motion */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }

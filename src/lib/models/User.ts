@@ -10,11 +10,25 @@ export interface IUser extends Document {
   role: "candidate" | "professional";
   profileImageUrl?: string;
   googleCalendarToken?: string;
+  
+  // Verification fields
+  schoolEmail?: string;
+  schoolEmailVerified?: boolean;
+  workEmail?: string;
+  workEmailVerified?: boolean;
+  linkedinUrl?: string;
+  resumeUrl?: string;
+  
   // Candidate fields
   targetRole?: string;
   targetIndustry?: string;
-  resumeUrl?: string;
   offerBonusCents?: number;
+  school?: string;
+  major?: string;
+  minor?: string;
+  clubs?: string;
+  gpa?: string;
+  
   // Professional fields
   title?: string;
   company?: string;
@@ -23,9 +37,10 @@ export interface IUser extends Document {
   bio?: string;
   expertise?: string[];
   sessionRateCents?: number;
-  linkedinUrl?: string;
   stripeAccountId?: string;
+  stripeAccountVerified?: boolean;
   referredBy?: string;
+  
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,10 +56,26 @@ const UserSchema = new Schema<IUser>(
     },
     profileImageUrl: { type: String, trim: true },
     googleCalendarToken: { type: String, trim: true },
+    
+    // Verification fields
+    schoolEmail: { type: String, trim: true },
+    schoolEmailVerified: { type: Boolean, default: false },
+    workEmail: { type: String, trim: true },
+    workEmailVerified: { type: Boolean, default: false },
+    linkedinUrl: { type: String, trim: true },
+    resumeUrl: { type: String, trim: true },
+    
+    // Candidate fields
     targetRole: { type: String, trim: true },
     targetIndustry: { type: String, trim: true },
-    resumeUrl: { type: String, trim: true },
     offerBonusCents: { type: Number, min: 0 },
+    school: { type: String, trim: true },
+    major: { type: String, trim: true },
+    minor: { type: String, trim: true },
+    clubs: { type: String, trim: true },
+    gpa: { type: String, trim: true },
+    
+    // Professional fields
     title: { type: String, trim: true },
     company: { type: String, trim: true },
     industry: { type: String, trim: true },
@@ -52,8 +83,8 @@ const UserSchema = new Schema<IUser>(
     bio: { type: String, trim: true },
     expertise: [{ type: String, trim: true }],
     sessionRateCents: { type: Number, min: 0 },
-    linkedinUrl: { type: String, trim: true },
     stripeAccountId: { type: String, trim: true },
+    stripeAccountVerified: { type: Boolean, default: false },
     referredBy: { type: String, ref: "User" },
   },
   { timestamps: true },
@@ -62,6 +93,9 @@ const UserSchema = new Schema<IUser>(
 // Indexes for common queries
 UserSchema.index({ email: 1 }, { unique: true });
 UserSchema.index({ role: 1 });
+UserSchema.index({ schoolEmail: 1 });
+UserSchema.index({ workEmail: 1 });
+UserSchema.index({ company: 1, role: 1 });
 
 const User = mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
 
