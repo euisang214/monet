@@ -1,10 +1,7 @@
 import mongoose from 'mongoose';
 
-if (!process.env.MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable');
-}
-
-const MONGODB_URI: string = process.env.MONGODB_URI;
+// MONGODB_URI may be loaded via dotenv in scripts before connectDB is called
+let MONGODB_URI: string | undefined = process.env.MONGODB_URI;
 
 /**
  * Global is used here to maintain a cached connection across hot reloads
@@ -24,6 +21,14 @@ if (!cached) {
 export async function connectDB() {
   if (cached.conn) {
     return cached.conn;
+  }
+
+  // Read env at call time in case dotenv loaded after module import
+  if (!MONGODB_URI) {
+    MONGODB_URI = process.env.MONGODB_URI;
+  }
+  if (!MONGODB_URI) {
+    throw new Error('Please define the MONGODB_URI environment variable');
   }
 
   if (!cached.promise) {
