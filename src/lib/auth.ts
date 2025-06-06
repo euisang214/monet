@@ -27,7 +27,7 @@ export const authOptions: NextAuthOptions = {
   ],
   
   callbacks: {
-    async signIn({ user, account }) {
+    async signIn({ user, account, profile }) {
       if (!user.email) {
         console.error('No email provided by OAuth provider');
         return false;
@@ -40,11 +40,10 @@ export const authOptions: NextAuthOptions = {
         let existingUser = await User.findOne({ email: user.email });
         
         if (!existingUser) {
-          // Create new user - default to candidate role
+          // Create new user without role - they'll set it in setup
           existingUser = new User({
             email: user.email,
             name: user.name || 'Unknown User',
-            role: 'candidate', // Default role
             profileImageUrl: user.image,
             // Store OAuth tokens for calendar integration
             ...(account?.provider === 'google' && account.access_token && {
@@ -53,7 +52,7 @@ export const authOptions: NextAuthOptions = {
           });
           
           await existingUser.save();
-          console.log('Created new user:', existingUser._id);
+          console.log('Created new OAuth user:', existingUser._id);
         } else {
           // Update existing user with latest profile info
           existingUser.name = user.name || existingUser.name;
@@ -65,31 +64,35 @@ export const authOptions: NextAuthOptions = {
           }
           
           await existingUser.save();
+          console.log('Updated existing OAuth user:', existingUser._id);
         }
         
         return true;
       } catch (error) {
-        console.error('Error during sign in:', error);
+        console.error('Error during OAuth sign in:', error);
         return false;
       }
     },
 
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         await connectDB();
         const dbUser = await User.findOne({ email: user.email });
         if (dbUser) {
           token.userId = dbUser._id.toString();
           token.role = dbUser.role;
+          token.profileComplete = !!(dbUser.role && 
+            (dbUser.role === 'candidate' ? dbUser.school : dbUser.company));
         }
       }
       return token;
     },
 
     async session({ session, token }) {
-      if (token) {
+      if (token && session.user) {
         session.user.id = token.userId as string;
         session.user.role = token.role as string;
+        session.user.profileComplete = token.profileComplete as boolean;
       }
       return session;
     }
@@ -107,16 +110,29 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET
 };
 
-/**
- * Get current user from session
- */
-export async function getCurrentUser(): Promise<unknown | null> {
-  try {
-    // This would typically use getServerSession in a real app
-    // For now, return null to indicate no auth implemented yet
-    return null;
-  } catch (error) {
-    console.error('Error getting current user:', error);
-    return null;
+// Extend NextAuth types
+declare module 'next-auth' {
+  interface Session {
+    user: {
+      id: string;
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
+      role?: string;
+      profileComplete?: boolean;
+    };
+  }
+
+  interface User {
+    id: string;
+    role?: string;
+  }
+}
+
+declare module 'next-auth/jwt' {
+  interface JWT {
+    userId?: string;
+    role?: string;
+    profileComplete?: boolean;
   }
 }

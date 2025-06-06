@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface Professional {
@@ -26,7 +28,9 @@ interface SearchFilters {
   minExperience: number;
 }
 
-export default function CandidateSearch({ candidateId }: { candidateId: string }) {
+export default function CandidateSearch() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [filteredProfessionals, setFilteredProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,9 +45,34 @@ export default function CandidateSearch({ candidateId }: { candidateId: string }
   const [selectedPro, setSelectedPro] = useState<Professional | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
 
+  // Check authentication
   useEffect(() => {
-    fetchProfessionals();
-  }, []);
+    if (status === 'loading') return; // Still loading
+
+    if (!session) {
+      // Not authenticated, redirect to signin
+      router.push('/auth/signin');
+      return;
+    }
+
+    if (!session.user?.role) {
+      // No role set, redirect to setup
+      router.push('/auth/setup');
+      return;
+    }
+
+    if (session.user.role !== 'candidate') {
+      // Wrong role, redirect to professional dashboard
+      router.push('/professional/dashboard');
+      return;
+    }
+  }, [session, status, router]);
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetchProfessionals();
+    }
+  }, [session]);
 
   useEffect(() => {
     filterProfessionals();
@@ -51,7 +80,7 @@ export default function CandidateSearch({ candidateId }: { candidateId: string }
 
   const fetchProfessionals = async () => {
     try {
-      const response = await fetch('/api/professionals/search');
+      const response = await fetch('/api/professional/search');
       const data = await response.json();
       
       if (data.success) {
@@ -135,7 +164,8 @@ export default function CandidateSearch({ candidateId }: { candidateId: string }
     return stars;
   };
 
-  if (loading) {
+  // Show loading while checking auth
+  if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -144,6 +174,11 @@ export default function CandidateSearch({ candidateId }: { candidateId: string }
         </div>
       </div>
     );
+  }
+
+  // Don't render if not authenticated or wrong role
+  if (!session?.user?.id || session.user.role !== 'candidate') {
+    return null; // Will redirect via useEffect
   }
 
   return (
@@ -164,7 +199,14 @@ export default function CandidateSearch({ candidateId }: { candidateId: string }
               >
                 Dashboard
               </Link>
-              <span className="text-gray-600">Candidate Search</span>
+              <div className="flex items-center space-x-2">
+                <img 
+                  src={session.user.image || undefined} 
+                  alt={session.user.name || 'User'} 
+                  className="w-8 h-8 rounded-full"
+                />
+                <span className="text-gray-600">{session.user.name}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -372,7 +414,7 @@ export default function CandidateSearch({ candidateId }: { candidateId: string }
           )}
         </div>
 
-        {/* Booking Modal */}
+        {/* Booking Modal - Same as before */}
         {showBookingModal && selectedPro && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
@@ -466,7 +508,7 @@ export default function CandidateSearch({ candidateId }: { candidateId: string }
                 </button>
                 <button
                   onClick={() => {
-                    // TODO: Implement actual booking with Stripe
+                    // TODO: Implement actual booking with Stripe using session.user.id
                     alert('Booking system integration coming soon!');
                     setShowBookingModal(false);
                   }}

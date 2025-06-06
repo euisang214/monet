@@ -26,6 +26,7 @@ export interface IUser extends Document {
   school?: string;
   major?: string;
   minor?: string;
+  graduationYear?: string;
   clubs?: string;
   gpa?: string;
   

@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface Session {
@@ -37,7 +39,9 @@ interface EarningsData {
   monthlyTotal: number;
 }
 
-export default function EnhancedProDashboard({ professionalId }: { professionalId: string }) {
+export default function EnhancedProDashboard() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
   const [inboundRequests, setInboundRequests] = useState<Session[]>([]);
   const [referralRequests, setReferralRequests] = useState<Session[]>([]);
@@ -80,13 +84,46 @@ export default function EnhancedProDashboard({ professionalId }: { professionalI
     });
   };
 
+  // Check authentication
   useEffect(() => {
-    fetchDashboardData();
-  }, [professionalId]);
+    if (status === 'loading') return; // Still loading
+
+    if (!session) {
+      // Not authenticated, redirect to signin
+      router.push('/auth/signin');
+      return;
+    }
+
+    if (!session.user?.role) {
+      // No role set, redirect to setup
+      router.push('/auth/setup');
+      return;
+    }
+
+    if (session.user.role !== 'professional') {
+      // Wrong role, redirect to candidate dashboard
+      router.push('/candidate/dashboard');
+      return;
+    }
+
+    if (!session.user.profileComplete) {
+      // Profile not complete, redirect to setup
+      router.push('/auth/setup/professional');
+      return;
+    }
+  }, [session, status, router]);
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetchDashboardData();
+    }
+  }, [session]);
 
   const fetchDashboardData = async () => {
+    if (!session?.user?.id) return;
+
     try {
-      const response = await fetch(`/api/professional/${professionalId}`);
+      const response = await fetch(`/api/professional/${session.user.id}`);
       const data = await response.json();
       
       if (data.success) {
@@ -114,12 +151,14 @@ export default function EnhancedProDashboard({ professionalId }: { professionalI
   };
 
   const handleAcceptRequest = async (sessionId: string) => {
+    if (!session?.user?.id) return;
+
     try {
       const response = await fetch(`/api/sessions/${sessionId}/confirm`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          professionalId,
+          professionalId: session.user.id,
           action: 'accept'
         })
       });
@@ -133,6 +172,8 @@ export default function EnhancedProDashboard({ professionalId }: { professionalI
   };
 
   const handleSubmitFeedback = async (sessionId: string) => {
+    if (!session?.user?.id) return;
+
     setSubmittingFeedback(true);
     
     try {
@@ -141,7 +182,7 @@ export default function EnhancedProDashboard({ professionalId }: { professionalI
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId,
-          professionalId,
+          professionalId: session.user.id,
           ...feedbackForm
         })
       });
@@ -194,7 +235,8 @@ export default function EnhancedProDashboard({ professionalId }: { professionalI
     </div>
   );
 
-  if (loading) {
+  // Show loading while checking auth
+  if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -203,6 +245,11 @@ export default function EnhancedProDashboard({ professionalId }: { professionalI
         </div>
       </div>
     );
+  }
+
+  // Don't render if not authenticated or wrong role
+  if (!session?.user?.id || session.user.role !== 'professional') {
+    return null; // Will redirect via useEffect
   }
 
   return (
@@ -223,7 +270,14 @@ export default function EnhancedProDashboard({ professionalId }: { professionalI
               >
                 Browse Candidates
               </Link>
-              <span className="text-gray-600">Professional Dashboard</span>
+              <div className="flex items-center space-x-2">
+                <img 
+                  src={session.user.image || undefined} 
+                  alt={session.user.name || 'User'} 
+                  className="w-8 h-8 rounded-full"
+                />
+                <span className="text-gray-600">{session.user.name}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -261,23 +315,23 @@ export default function EnhancedProDashboard({ professionalId }: { professionalI
                     No upcoming sessions scheduled
                   </div>
                 ) : (
-                  upcomingSessions.map((session) => (
-                    <div key={session._id} className="px-6 py-4 hover:bg-gray-50">
+                  upcomingSessions.map((sessionItem) => (
+                    <div key={sessionItem._id} className="px-6 py-4 hover:bg-gray-50">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3">
                           <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
-                            {session.candidate.name.charAt(0)}
+                            {sessionItem.candidate.name.charAt(0)}
                           </div>
                           <div>
-                            <h3 className="font-semibold text-gray-900">{session.candidate.name}</h3>
+                            <h3 className="font-semibold text-gray-900">{sessionItem.candidate.name}</h3>
                             <p className="text-sm text-gray-600">
-                              {formatDate(session.scheduledAt)}
+                              {formatDate(sessionItem.scheduledAt)}
                             </p>
                           </div>
                         </div>
-                        {session.zoomJoinUrl && (
+                        {sessionItem.zoomJoinUrl && (
                           <a
-                            href={session.zoomJoinUrl}
+                            href={sessionItem.zoomJoinUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700"
@@ -333,22 +387,22 @@ export default function EnhancedProDashboard({ professionalId }: { professionalI
                       No pending candidate requests
                     </div>
                   ) : (
-                    inboundRequests.map((session) => (
-                      <div key={session._id} className="px-6 py-3">
+                    inboundRequests.map((sessionItem) => (
+                      <div key={sessionItem._id} className="px-6 py-3">
                         <div className="flex justify-between items-center">
                           <div className="flex items-center space-x-3">
                             <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                              {session.candidate.name.charAt(0)}
+                              {sessionItem.candidate.name.charAt(0)}
                             </div>
                             <div>
-                              <h4 className="font-medium text-gray-900 text-sm">{session.candidate.name}</h4>
+                              <h4 className="font-medium text-gray-900 text-sm">{sessionItem.candidate.name}</h4>
                               <p className="text-xs text-gray-600">
-                                {formatDate(session.scheduledAt)}
+                                {formatDate(sessionItem.scheduledAt)}
                               </p>
                             </div>
                           </div>
                           <button
-                            onClick={() => handleAcceptRequest(session._id)}
+                            onClick={() => handleAcceptRequest(sessionItem._id)}
                             className="px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded hover:bg-green-700"
                           >
                             Accept
@@ -371,22 +425,22 @@ export default function EnhancedProDashboard({ professionalId }: { professionalI
                       No pending referral requests
                     </div>
                   ) : (
-                    referralRequests.map((session) => (
-                      <div key={session._id} className="px-6 py-3">
+                    referralRequests.map((sessionItem) => (
+                      <div key={sessionItem._id} className="px-6 py-3">
                         <div className="flex justify-between items-center">
                           <div className="flex items-center space-x-3">
                             <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                              {session.candidate.name.charAt(0)}
+                              {sessionItem.candidate.name.charAt(0)}
                             </div>
                             <div>
-                              <h4 className="font-medium text-gray-900 text-sm">{session.candidate.name}</h4>
+                              <h4 className="font-medium text-gray-900 text-sm">{sessionItem.candidate.name}</h4>
                               <p className="text-xs text-gray-600">
-                                Referred • {formatDate(session.scheduledAt, false)}
+                                Referred • {formatDate(sessionItem.scheduledAt, false)}
                               </p>
                             </div>
                           </div>
                           <button
-                            onClick={() => handleAcceptRequest(session._id)}
+                            onClick={() => handleAcceptRequest(sessionItem._id)}
                             className="px-3 py-1 bg-purple-600 text-white text-xs font-semibold rounded hover:bg-purple-700"
                           >
                             Accept
@@ -448,22 +502,22 @@ export default function EnhancedProDashboard({ professionalId }: { professionalI
                     No pending feedback submissions
                   </div>
                 ) : (
-                  pendingFeedback.map((session) => (
-                    <div key={session._id} className="px-6 py-4">
+                  pendingFeedback.map((sessionItem) => (
+                    <div key={sessionItem._id} className="px-6 py-4">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3">
                           <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                            {session.candidate.name.charAt(0)}
+                            {sessionItem.candidate.name.charAt(0)}
                           </div>
                           <div>
-                            <h4 className="font-medium text-gray-900">{session.candidate.name}</h4>
+                            <h4 className="font-medium text-gray-900">{sessionItem.candidate.name}</h4>
                             <p className="text-sm text-gray-600">
-                              {formatDate(session.scheduledAt, false)}
+                              {formatDate(sessionItem.scheduledAt, false)}
                             </p>
                           </div>
                         </div>
                         <button
-                          onClick={() => setFeedbackModal(session)}
+                          onClick={() => setFeedbackModal(sessionItem)}
                           className="px-3 py-1 bg-amber-600 text-white text-sm font-semibold rounded hover:bg-amber-700"
                         >
                           Submit
@@ -486,17 +540,17 @@ export default function EnhancedProDashboard({ professionalId }: { professionalI
                     No completed sessions yet
                   </div>
                 ) : (
-                  completedSessions.map((session) => (
-                    <div key={session._id} className="px-6 py-4">
+                  completedSessions.map((sessionItem) => (
+                    <div key={sessionItem._id} className="px-6 py-4">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3">
                           <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                            {session.candidate.name.charAt(0)}
+                            {sessionItem.candidate.name.charAt(0)}
                           </div>
                           <div>
-                            <h4 className="font-medium text-gray-900">{session.candidate.name}</h4>
+                            <h4 className="font-medium text-gray-900">{sessionItem.candidate.name}</h4>
                             <p className="text-sm text-gray-600">
-                              {formatDate(session.scheduledAt, false)} • ${(session.rateCents / 100).toFixed(0)}
+                              {formatDate(sessionItem.scheduledAt, false)} • ${(sessionItem.rateCents / 100).toFixed(0)}
                             </p>
                           </div>
                         </div>

@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface Professional {
@@ -42,7 +44,9 @@ interface SearchFilters {
   minExperience: number;
 }
 
-export default function EnhancedCandidateDashboard({ candidateId }: { candidateId: string }) {
+export default function EnhancedCandidateDashboard() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [filteredProfessionals, setFilteredProfessionals] = useState<Professional[]>([]);
@@ -77,18 +81,51 @@ export default function EnhancedCandidateDashboard({ candidateId }: { candidateI
     });
   };
 
+  // Check authentication
   useEffect(() => {
-    fetchDashboardData();
-  }, [candidateId]);
+    if (status === 'loading') return; // Still loading
+
+    if (!session) {
+      // Not authenticated, redirect to signin
+      router.push('/auth/signin');
+      return;
+    }
+
+    if (!session.user?.role) {
+      // No role set, redirect to setup
+      router.push('/auth/setup');
+      return;
+    }
+
+    if (session.user.role !== 'candidate') {
+      // Wrong role, redirect to professional dashboard
+      router.push('/professional/dashboard');
+      return;
+    }
+
+    if (!session.user.profileComplete) {
+      // Profile not complete, redirect to setup
+      router.push('/auth/setup/candidate');
+      return;
+    }
+  }, [session, status, router]);
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetchDashboardData();
+    }
+  }, [session]);
 
   useEffect(() => {
     filterProfessionals();
   }, [professionals, searchQuery, filters]);
 
   const fetchDashboardData = async () => {
+    if (!session?.user?.id) return;
+    
     try {
       // Fetch upcoming sessions for candidate
-      const sessionsResponse = await fetch(`/api/sessions/candidate/${candidateId}`);
+      const sessionsResponse = await fetch(`/api/sessions/candidate/${session.user.id}`);
       if (sessionsResponse.ok) {
         const sessionsData = await sessionsResponse.json();
         setUpcomingSessions(sessionsData.data?.upcoming || []);
@@ -170,7 +207,8 @@ export default function EnhancedCandidateDashboard({ candidateId }: { candidateI
     return stars;
   };
 
-  if (loading) {
+  // Show loading while checking auth
+  if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -179,6 +217,11 @@ export default function EnhancedCandidateDashboard({ candidateId }: { candidateI
         </div>
       </div>
     );
+  }
+
+  // Don't render if not authenticated or wrong role
+  if (!session?.user?.id || session.user.role !== 'candidate') {
+    return null; // Will redirect via useEffect
   }
 
   return (
@@ -199,7 +242,14 @@ export default function EnhancedCandidateDashboard({ candidateId }: { candidateI
               >
                 Browse All Professionals
               </Link>
-              <span className="text-gray-600">Candidate Dashboard</span>
+              <div className="flex items-center space-x-2">
+                <img 
+                  src={session.user.image || undefined} 
+                  alt={session.user.name || 'User'} 
+                  className="w-8 h-8 rounded-full"
+                />
+                <span className="text-gray-600">{session.user.name}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -236,49 +286,49 @@ export default function EnhancedCandidateDashboard({ candidateId }: { candidateI
                   <p className="text-gray-400">Book your first chat with a professional!</p>
                 </div>
               ) : (
-                upcomingSessions.map((session) => (
-                  <div key={session._id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                upcomingSessions.map((sessionItem) => (
+                  <div key={sessionItem._id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         {/* Profile Picture */}
                         <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold overflow-hidden">
-                          {session.professional.profileImageUrl ? (
+                          {sessionItem.professional.profileImageUrl ? (
                             <img 
-                              src={session.professional.profileImageUrl} 
-                              alt={session.professional.name}
+                              src={sessionItem.professional.profileImageUrl} 
+                              alt={sessionItem.professional.name}
                               className="w-12 h-12 rounded-full object-cover"
                             />
                           ) : (
-                            session.professional.name.charAt(0)
+                            sessionItem.professional.name.charAt(0)
                           )}
                         </div>
                         
                         {/* Session Details */}
                         <div>
                           <h3 className="font-bold text-gray-900">
-                            {session.professional.name}
+                            {sessionItem.professional.name}
                           </h3>
                           <p className="text-sm text-gray-600">
-                            {session.professional.title} at {session.professional.company}
+                            {sessionItem.professional.title} at {sessionItem.professional.company}
                           </p>
                           <div className="flex items-center space-x-4 mt-1">
                             <span className="text-sm text-indigo-600 font-medium">
-                              {formatDate(session.scheduledAt, false)}
+                              {formatDate(sessionItem.scheduledAt, false)}
                             </span>
                             <span className="text-sm text-gray-500">
-                              {formatTime(session.scheduledAt)}
+                              {formatTime(sessionItem.scheduledAt)}
                             </span>
                             <span className="text-sm text-gray-500">
-                              {session.durationMinutes} min
+                              {sessionItem.durationMinutes} min
                             </span>
                           </div>
                         </div>
                       </div>
                       
                       {/* Join Button */}
-                      {session.zoomJoinUrl && session.status === 'confirmed' && (
+                      {sessionItem.zoomJoinUrl && sessionItem.status === 'confirmed' && (
                         <a
-                          href={session.zoomJoinUrl}
+                          href={sessionItem.zoomJoinUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
@@ -287,7 +337,7 @@ export default function EnhancedCandidateDashboard({ candidateId }: { candidateI
                         </a>
                       )}
                       
-                      {session.status === 'requested' && (
+                      {sessionItem.status === 'requested' && (
                         <span className="px-3 py-1 bg-amber-100 text-amber-800 text-xs rounded-full font-medium">
                           Pending
                         </span>
@@ -567,6 +617,7 @@ export default function EnhancedCandidateDashboard({ candidateId }: { candidateI
                 </button>
                 <button
                   onClick={() => {
+                    // TODO: Implement actual booking with Stripe using session.user.id
                     alert('Booking system integration coming soon!');
                     setShowBookingModal(false);
                   }}

@@ -16,7 +16,8 @@
     "stripe": "^14.0.0",
     "date-fns": "^3.0.0",
     "next-auth": "^4.24.0",
-    "zod": "^3.22.0"
+    "zod": "^3.22.0",
+    "@auth/mongodb-adapter": "^2.4.2"
   },
   "devDependencies": {
     "typescript": "^5",
