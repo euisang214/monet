@@ -1,7 +1,7 @@
 import { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import LinkedInProvider from 'next-auth/providers/linkedin';
-import { connectDB } from './db';
+import { connectDB } from '../lib/models/db';
 import User from './models/User';
 
 export const authOptions: NextAuthOptions = {
