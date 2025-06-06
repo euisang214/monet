@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import Stripe from 'stripe';
-import { connectDB } from '@/lib/db';
+import { connectDB } from '@/lib/models/db';
 import Session from '@/lib/models/Session';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {

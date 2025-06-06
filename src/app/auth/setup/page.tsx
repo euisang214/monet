@@ -1,35 +1,36 @@
 'use client';
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useAuthGuard } from '@/hooks/useAuthGuard';
+import { apiRequest } from '@/lib/utils';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 export default function SetupPage() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const [selectedRole, setSelectedRole] = useState<'candidate' | 'professional' | ''>('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    if (status === 'loading') return; // Still loading session
-    
-    if (!session) {
-      // No session, redirect to signin
-      router.push('/auth/signin');
-      return;
+  // Only check for authentication, not role (since they're setting up role here)
+  const { isAuthenticated, isLoading } = useAuthGuard({
+    requireProfileComplete: false,
+    redirectTo: {
+      noAuth: '/auth/signin'
     }
+  });
 
-    // Check if user already has a role set
-    if (session.user?.role) {
-      // User already has a role, redirect to appropriate dashboard
-      if (session.user.role === 'candidate') {
-        router.push('/candidate/dashboard');
-      } else if (session.user.role === 'professional') {
-        router.push('/professional/dashboard');
-      }
+  // Check if user already has a role and redirect accordingly
+  if (session?.user?.role) {
+    if (session.user.role === 'candidate') {
+      router.push('/candidate/dashboard');
+    } else if (session.user.role === 'professional') {
+      router.push('/professional/dashboard');
     }
-  }, [session, status, router]);
+    return null;
+  }
 
   const handleContinue = async () => {
     if (!selectedRole || !session?.user?.id) return;
@@ -37,21 +38,15 @@ export default function SetupPage() {
     setLoading(true);
     
     try {
-      // Update user role via API
-      const response = await fetch('/api/auth/setup', {
+      const result = await apiRequest('/api/auth/setup', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           userId: session.user.id,
           role: selectedRole
         })
       });
-
-      const data = await response.json();
       
-      if (data.success) {
+      if (result.success) {
         // Redirect to role-specific profile completion
         if (selectedRole === 'candidate') {
           router.push('/auth/setup/candidate');
@@ -59,7 +54,7 @@ export default function SetupPage() {
           router.push('/auth/setup/professional');
         }
       } else {
-        alert(data.error || 'Failed to set role. Please try again.');
+        alert(result.error || 'Failed to set role. Please try again.');
       }
     } catch (error) {
       console.error('Setup error:', error);
@@ -69,18 +64,11 @@ export default function SetupPage() {
     }
   };
 
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading your account...</p>
-        </div>
-      </div>
-    );
+  if (isLoading) {
+    return <LoadingSpinner message="Loading your account..." />;
   }
 
-  if (!session) {
+  if (!isAuthenticated) {
     return null; // Will redirect to signin
   }
 
@@ -98,7 +86,7 @@ export default function SetupPage() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-600">Welcome, {session.user?.name}</span>
+              <span className="text-gray-600">Welcome, {session?.user?.name}</span>
             </div>
           </div>
         </div>
@@ -217,9 +205,9 @@ export default function SetupPage() {
             <div className="flex items-start space-x-3">
               <div className="text-blue-600 mt-0.5">👋</div>
               <div>
-                <h4 className="font-semibold text-blue-900 mb-1">Welcome {session.user?.name}!</h4>
+                <h4 className="font-semibold text-blue-900 mb-1">Welcome {session?.user?.name}!</h4>
                 <p className="text-sm text-blue-800">
-                  We've pre-filled your profile with information from {session.user?.email}. 
+                  We've pre-filled your profile with information from {session?.user?.email}. 
                   You can review and edit this in the next step.
                 </p>
               </div>

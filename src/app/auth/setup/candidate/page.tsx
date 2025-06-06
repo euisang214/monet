@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useAuthGuard } from '@/hooks/useAuthGuard';
+import { apiRequest } from '@/lib/utils';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 interface CandidateProfile {
   school: string;
@@ -17,7 +20,7 @@ interface CandidateProfile {
 }
 
 export default function CandidateProfilePage() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<CandidateProfile>({
@@ -31,36 +34,27 @@ export default function CandidateProfilePage() {
     offerBonusCents: 20000 // $200 default
   });
 
+  const { isAuthenticated, isLoading } = useAuthGuard({
+    requiredRole: 'candidate',
+    requireProfileComplete: false
+  });
+
   useEffect(() => {
-    if (status === 'loading') return;
-    
-    if (!session) {
-      router.push('/auth/signin');
-      return;
+    if (isAuthenticated && session?.user?.id) {
+      fetchExistingProfile();
     }
-
-    if (session.user?.role !== 'candidate') {
-      router.push('/auth/setup');
-      return;
-    }
-
-    // Pre-populate any existing data
-    fetchExistingProfile();
-  }, [session, status, router]);
+  }, [isAuthenticated, session]);
 
   const fetchExistingProfile = async () => {
     if (!session?.user?.id) return;
 
     try {
-      const response = await fetch(`/api/auth/profile/${session.user.id}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          setProfile(prev => ({
-            ...prev,
-            ...data.data
-          }));
-        }
+      const result = await apiRequest(`/api/auth/profile/${session.user.id}`);
+      if (result.success && result.data) {
+        setProfile(prev => ({
+          ...prev,
+          ...result.data
+        }));
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -81,25 +75,20 @@ export default function CandidateProfilePage() {
     setLoading(true);
     
     try {
-      const response = await fetch('/api/auth/complete-profile', {
+      const result = await apiRequest('/api/auth/complete-profile', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           userId: session?.user?.id,
           role: 'candidate',
           ...profile
         })
       });
-
-      const data = await response.json();
       
-      if (data.success) {
+      if (result.success) {
         // Redirect to candidate dashboard
         router.push('/candidate/dashboard');
       } else {
-        alert(data.error || 'Failed to save profile. Please try again.');
+        alert(result.error || 'Failed to save profile. Please try again.');
       }
     } catch (error) {
       console.error('Profile completion error:', error);
@@ -111,18 +100,11 @@ export default function CandidateProfilePage() {
 
   const canSubmit = profile.school && profile.major && profile.targetRole;
 
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading your profile...</p>
-        </div>
-      </div>
-    );
+  if (isLoading) {
+    return <LoadingSpinner message="Loading your profile..." />;
   }
 
-  if (!session?.user?.id || session.user.role !== 'candidate') {
+  if (!isAuthenticated) {
     return null;
   }
 
@@ -140,11 +122,11 @@ export default function CandidateProfilePage() {
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <img 
-                  src={session.user.image || undefined} 
-                  alt={session.user.name || 'User'} 
+                  src={session?.user?.image || undefined} 
+                  alt={session?.user?.name || 'User'} 
                   className="w-8 h-8 rounded-full"
                 />
-                <span className="text-gray-600">{session.user.name}</span>
+                <span className="text-gray-600">{session?.user?.name}</span>
               </div>
             </div>
           </div>

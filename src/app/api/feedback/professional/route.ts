@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
+import { NextRequest } from 'next/server';
+import { withAuthAndDB, errorResponse, successResponse, validateRequestBody } from '@/lib/api/error-handler';
 import User from '@/lib/models/User';
 import Session from '@/lib/models/Session';
 import { ProfessionalFeedback, ReferralEdge } from '@/lib/models/Feedback';
@@ -30,211 +30,180 @@ interface SubmitFeedbackRequest {
  * POST /api/feedback/professional
  * Submit professional feedback and trigger session fee + referral payouts
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuthAndDB(async (request: NextRequest, context: any, session: any) => {
+  // Validate request body
+  const validation = await validateRequestBody<SubmitFeedbackRequest>(request, [
+    'sessionId', 'professionalId', 'culturalFitRating', 'interestRating', 
+    'technicalRating', 'feedback'
+  ]);
+  
+  if (!validation.isValid) {
+    return errorResponse(validation.error!, 400);
+  }
+  
+  const {
+    sessionId,
+    professionalId,
+    culturalFitRating,
+    interestRating,
+    technicalRating,
+    feedback,
+    internalNotes
+  } = validation.data!;
+
+  // Validate ratings
+  const ratings = [culturalFitRating, interestRating, technicalRating];
+  if (ratings.some(r => r < 1 || r > 5)) {
+    return errorResponse('All ratings must be between 1 and 5', 400);
+  }
+
+  if (feedback.length < 20) {
+    return errorResponse('Feedback must be at least 20 characters', 400);
+  }
+
+  // Verify professionalId matches session user
+  if (professionalId !== session.user.id) {
+    return errorResponse('Unauthorized - not your session', 403);
+  }
+
+  // Fetch session and validate
+  const sessionRecord = await Session.findById(sessionId)
+    .populate('candidate', 'name email offerBonusCents')
+    .populate('professional', 'name email stripeAccountId');
+
+  if (!sessionRecord) {
+    return errorResponse('Session not found', 404);
+  }
+
+  if (sessionRecord.professionalId !== professionalId) {
+    return errorResponse('Unauthorized - not your session', 403);
+  }
+
+  if (sessionRecord.status !== 'confirmed') {
+    return errorResponse('Session must be confirmed to submit feedback', 400);
+  }
+
+  if (sessionRecord.feedbackSubmittedAt) {
+    return errorResponse('Feedback already submitted for this session', 409);
+  }
+
+  // Check if professional has Stripe account for payouts
+  if (!sessionRecord.professional.stripeAccountId) {
+    return errorResponse('Professional must complete Stripe onboarding before receiving payments', 400);
+  }
+
+  // Create feedback record
+  const professionalFeedback = new ProfessionalFeedback({
+    sessionId,
+    professionalId,
+    candidateId: sessionRecord.candidateId,
+    culturalFitRating,
+    interestRating,
+    technicalRating,
+    feedback,
+    internalNotes
+  });
+
+  await professionalFeedback.save();
+
+  // Update session status
+  sessionRecord.status = 'completed';
+  sessionRecord.completedAt = new Date();
+  sessionRecord.feedbackSubmittedAt = new Date();
+
+  // Calculate payouts
+  const grossAmount = sessionRecord.rateCents;
+  const referralPayouts = await calculateReferralPayouts(sessionRecord, grossAmount);
+  const totalReferralAmount = referralPayouts.reduce((sum, p) => sum + p.bonusCents, 0);
+  
+  // Platform fee applied after referral bonuses
+  const netAfterReferrals = grossAmount - totalReferralAmount;
+  const platformFee = Math.round(netAfterReferrals * PLATFORM_FEE_RATE);
+  const professionalPayout = netAfterReferrals - platformFee;
+
+  const transferIds: string[] = [];
+
   try {
-    await connectDB();
-    
-    const body: SubmitFeedbackRequest = await request.json();
-    const {
-      sessionId,
-      professionalId,
-      culturalFitRating,
-      interestRating,
-      technicalRating,
-      feedback,
-      internalNotes
-    } = body;
+    // Create main session payout
+    const mainTransfer = await stripe.transfers.create({
+      amount: professionalPayout,
+      currency: 'usd',
+      destination: sessionRecord.professional.stripeAccountId,
+      metadata: {
+        sessionId,
+        type: 'session_fee',
+        professionalId
+      }
+    });
+    transferIds.push(mainTransfer.id);
 
-    // Validate required fields
-    if (!sessionId || !professionalId || !feedback) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+    // Create referral payouts
+    for (const referralPayout of referralPayouts) {
+      const referrerUser = await User.findById(referralPayout.referrerProId);
+      if (referrerUser?.stripeAccountId) {
+        const referralTransfer = await stripe.transfers.create({
+          amount: referralPayout.bonusCents,
+          currency: 'usd',
+          destination: referrerUser.stripeAccountId,
+          metadata: {
+            sessionId,
+            type: 'referral_bonus',
+            level: referralPayout.level.toString(),
+            referrerProId: referralPayout.referrerProId
+          }
+        });
+        
+        // Update referral edge with transfer ID
+        const referralEdge = new ReferralEdge({
+          sessionId,
+          referrerProId: referralPayout.referrerProId,
+          level: referralPayout.level,
+          bonusCents: referralPayout.bonusCents,
+          stripeTransferId: referralTransfer.id,
+          paidAt: new Date()
+        });
+        await referralEdge.save();
+        
+        transferIds.push(referralTransfer.id);
+      }
     }
 
-    // Validate ratings
-    const ratings = [culturalFitRating, interestRating, technicalRating];
-    if (ratings.some(r => !r || r < 1 || r > 5)) {
-      return NextResponse.json(
-        { error: 'All ratings must be between 1 and 5' },
-        { status: 400 }
-      );
-    }
+    // Update session with transfer IDs
+    sessionRecord.stripeTransferIds = transferIds;
+    sessionRecord.paidAt = new Date();
+    await sessionRecord.save();
 
-    if (feedback.length < 20) {
-      return NextResponse.json(
-        { error: 'Feedback must be at least 20 characters' },
-        { status: 400 }
-      );
-    }
-
-    // Fetch session and validate
-    const session = await Session.findById(sessionId)
-      .populate('candidate', 'name email offerBonusCents')
-      .populate('professional', 'name email stripeAccountId');
-
-    if (!session) {
-      return NextResponse.json(
-        { error: 'Session not found' },
-        { status: 404 }
-      );
-    }
-
-    if (session.professionalId !== professionalId) {
-      return NextResponse.json(
-        { error: 'Unauthorized - not your session' },
-        { status: 403 }
-      );
-    }
-
-    if (session.status !== 'confirmed') {
-      return NextResponse.json(
-        { error: 'Session must be confirmed to submit feedback' },
-        { status: 400 }
-      );
-    }
-
-    if (session.feedbackSubmittedAt) {
-      return NextResponse.json(
-        { error: 'Feedback already submitted for this session' },
-        { status: 409 }
-      );
-    }
-
-    // Check if professional has Stripe account for payouts
-    if (!session.professional.stripeAccountId) {
-      return NextResponse.json(
-        { error: 'Professional must complete Stripe onboarding before receiving payments' },
-        { status: 400 }
-      );
-    }
-
-    // Create feedback record
-    const professionalFeedback = new ProfessionalFeedback({
-      sessionId,
-      professionalId,
-      candidateId: session.candidateId,
-      culturalFitRating,
-      interestRating,
-      technicalRating,
-      feedback,
-      internalNotes
+    return successResponse({
+      message: 'Feedback submitted successfully and payment processed',
+      sessionPayout: professionalPayout,
+      referralPayouts: referralPayouts.length,
+      candidateOfferBonus: sessionRecord.candidate.offerBonusCents || 0,
+      transferIds
     });
 
-    await professionalFeedback.save();
-
-    // Update session status
-    session.status = 'completed';
-    session.completedAt = new Date();
-    session.feedbackSubmittedAt = new Date();
-
-    // Calculate payouts
-    const grossAmount = session.rateCents;
-    const referralPayouts = await calculateReferralPayouts(session, grossAmount);
-    const totalReferralAmount = referralPayouts.reduce((sum, p) => sum + p.bonusCents, 0);
+  } catch (stripeError) {
+    console.error('Stripe transfer error:', stripeError);
     
-    // Platform fee applied after referral bonuses
-    const netAfterReferrals = grossAmount - totalReferralAmount;
-    const platformFee = Math.round(netAfterReferrals * PLATFORM_FEE_RATE);
-    const professionalPayout = netAfterReferrals - platformFee;
-
-    const transferIds: string[] = [];
-
-    try {
-      // Create main session payout
-      const mainTransfer = await stripe.transfers.create({
-        amount: professionalPayout,
-        currency: 'usd',
-        destination: session.professional.stripeAccountId,
-        metadata: {
-          sessionId,
-          type: 'session_fee',
-          professionalId
-        }
-      });
-      transferIds.push(mainTransfer.id);
-
-      // Create referral payouts
-      for (const referralPayout of referralPayouts) {
-        const referrerUser = await User.findById(referralPayout.referrerProId);
-        if (referrerUser?.stripeAccountId) {
-          const referralTransfer = await stripe.transfers.create({
-            amount: referralPayout.bonusCents,
-            currency: 'usd',
-            destination: referrerUser.stripeAccountId,
-            metadata: {
-              sessionId,
-              type: 'referral_bonus',
-              level: referralPayout.level.toString(),
-              referrerProId: referralPayout.referrerProId
-            }
-          });
-          
-          // Update referral edge with transfer ID
-          const referralEdge = new ReferralEdge({
-            sessionId,
-            referrerProId: referralPayout.referrerProId,
-            level: referralPayout.level,
-            bonusCents: referralPayout.bonusCents,
-            stripeTransferId: referralTransfer.id,
-            paidAt: new Date()
-          });
-          await referralEdge.save();
-          
-          transferIds.push(referralTransfer.id);
-        }
-      }
-
-      // Update session with transfer IDs
-      session.stripeTransferIds = transferIds;
-      session.paidAt = new Date();
-      await session.save();
-
-      return NextResponse.json({
-        success: true,
-        data: {
-          message: 'Feedback submitted successfully and payment processed',
-          sessionPayout: professionalPayout,
-          referralPayouts: referralPayouts.length,
-          candidateOfferBonus: session.candidate.offerBonusCents || 0,
-          transferIds
-        }
-      });
-
-    } catch (stripeError) {
-      console.error('Stripe transfer error:', stripeError);
-      
-      // Rollback feedback if payment failed
-      await ProfessionalFeedback.findByIdAndDelete(professionalFeedback._id);
-      
-      return NextResponse.json(
-        { error: 'Payment processing failed. Please try again.' },
-        { status: 500 }
-      );
-    }
-
-  } catch (error) {
-    console.error('Feedback submission error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    // Rollback feedback if payment failed
+    await ProfessionalFeedback.findByIdAndDelete(professionalFeedback._id);
+    
+    return errorResponse('Payment processing failed. Please try again.', 500);
   }
-}
+
+}, { requireRole: 'professional' });
 
 /**
  * Calculate referral payouts using the multi-level system
  * 10% for level 1, 1% for level 2, 0.1% for level 3, etc.
  */
-async function calculateReferralPayouts(session: any, grossAmount: number) {
+async function calculateReferralPayouts(sessionRecord: any, grossAmount: number) {
   const payouts = [];
   
-  if (!session.referrerProId) {
+  if (!sessionRecord.referrerProId) {
     return payouts;
   }
 
-  let currentReferrerId = session.referrerProId;
+  let currentReferrerId = sessionRecord.referrerProId;
   let level = 1;
 
   // Walk up the referral chain (max 10 levels)

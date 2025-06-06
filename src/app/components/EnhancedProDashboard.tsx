@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { formatDate, formatTime, formatLongDate, getAvatarGradient, apiRequest } from '@/lib/utils';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import Modal from '@/components/ui/Modal';
 
 interface Session {
   _id: string;
@@ -40,8 +42,7 @@ interface EarningsData {
 }
 
 export default function EnhancedProDashboard() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  const { data: session } = useSession();
   const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
   const [inboundRequests, setInboundRequests] = useState<Session[]>([]);
   const [referralRequests, setReferralRequests] = useState<Session[]>([]);
@@ -65,54 +66,6 @@ export default function EnhancedProDashboard() {
   });
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
 
-  // Helper function to format dates
-  const formatDate = (dateString: string, includeTime = true) => {
-    const date = new Date(dateString);
-    const options: Intl.DateTimeFormatOptions = includeTime 
-      ? { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }
-      : { month: 'short', day: 'numeric' };
-    return date.toLocaleDateString('en-US', options);
-  };
-
-  const formatLongDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-  };
-
-  // Check authentication
-  useEffect(() => {
-    if (status === 'loading') return; // Still loading
-
-    if (!session) {
-      // Not authenticated, redirect to signin
-      router.push('/auth/signin');
-      return;
-    }
-
-    if (!session.user?.role) {
-      // No role set, redirect to setup
-      router.push('/auth/setup');
-      return;
-    }
-
-    if (session.user.role !== 'professional') {
-      // Wrong role, redirect to candidate dashboard
-      router.push('/candidate/dashboard');
-      return;
-    }
-
-    if (!session.user.profileComplete) {
-      // Profile not complete, redirect to setup
-      router.push('/auth/setup/professional');
-      return;
-    }
-  }, [session, status, router]);
-
   useEffect(() => {
     if (session?.user?.id) {
       fetchDashboardData();
@@ -123,11 +76,10 @@ export default function EnhancedProDashboard() {
     if (!session?.user?.id) return;
 
     try {
-      const response = await fetch(`/api/professional/${session.user.id}`);
-      const data = await response.json();
+      const result = await apiRequest(`/api/professional/${session.user.id}`);
       
-      if (data.success) {
-        const { upcoming, completed, pending } = data.data;
+      if (result.success) {
+        const { upcoming, completed, pending } = result.data;
         
         setUpcomingSessions(upcoming.filter((s: Session) => s.status === 'confirmed'));
         setInboundRequests(pending.filter((s: Session) => !s.referrerProId));
@@ -154,16 +106,15 @@ export default function EnhancedProDashboard() {
     if (!session?.user?.id) return;
 
     try {
-      const response = await fetch(`/api/sessions/${sessionId}/confirm`, {
+      const result = await apiRequest(`/api/sessions/${sessionId}/confirm`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           professionalId: session.user.id,
           action: 'accept'
         })
       });
 
-      if (response.ok) {
+      if (result.success) {
         await fetchDashboardData();
       }
     } catch (error) {
@@ -177,19 +128,16 @@ export default function EnhancedProDashboard() {
     setSubmittingFeedback(true);
     
     try {
-      const response = await fetch('/api/feedback/professional', {
+      const result = await apiRequest('/api/feedback/professional', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId,
           professionalId: session.user.id,
           ...feedbackForm
         })
       });
-
-      const data = await response.json();
       
-      if (data.success) {
+      if (result.success) {
         await fetchDashboardData();
         setFeedbackModal(null);
         setFeedbackForm({
@@ -199,9 +147,9 @@ export default function EnhancedProDashboard() {
           feedback: '',
           internalNotes: ''
         });
-        alert(`Feedback submitted! You've been paid $${(data.data.sessionPayout / 100).toFixed(2)}`);
+        alert(`Feedback submitted! You've been paid $${(result.data.sessionPayout / 100).toFixed(2)}`);
       } else {
-        alert(data.error || 'Failed to submit feedback');
+        alert(result.error || 'Failed to submit feedback');
       }
     } catch (error) {
       console.error('Error submitting feedback:', error);
@@ -235,21 +183,8 @@ export default function EnhancedProDashboard() {
     </div>
   );
 
-  // Show loading while checking auth
-  if (status === 'loading' || loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading your dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Don't render if not authenticated or wrong role
-  if (!session?.user?.id || session.user.role !== 'professional') {
-    return null; // Will redirect via useEffect
+  if (loading) {
+    return <LoadingSpinner message="Loading your dashboard..." />;
   }
 
   return (
@@ -272,11 +207,11 @@ export default function EnhancedProDashboard() {
               </Link>
               <div className="flex items-center space-x-2">
                 <img 
-                  src={session.user.image || undefined} 
-                  alt={session.user.name || 'User'} 
+                  src={session?.user?.image || undefined} 
+                  alt={session?.user?.name || 'User'} 
                   className="w-8 h-8 rounded-full"
                 />
-                <span className="text-gray-600">{session.user.name}</span>
+                <span className="text-gray-600">{session?.user?.name}</span>
               </div>
             </div>
           </div>
@@ -315,11 +250,11 @@ export default function EnhancedProDashboard() {
                     No upcoming sessions scheduled
                   </div>
                 ) : (
-                  upcomingSessions.map((sessionItem) => (
+                  upcomingSessions.map((sessionItem, index) => (
                     <div key={sessionItem._id} className="px-6 py-4 hover:bg-gray-50">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                          <div className={`w-10 h-10 ${getAvatarGradient(index)} rounded-full flex items-center justify-center text-white font-bold`}>
                             {sessionItem.candidate.name.charAt(0)}
                           </div>
                           <div>
@@ -387,11 +322,11 @@ export default function EnhancedProDashboard() {
                       No pending candidate requests
                     </div>
                   ) : (
-                    inboundRequests.map((sessionItem) => (
+                    inboundRequests.map((sessionItem, index) => (
                       <div key={sessionItem._id} className="px-6 py-3">
                         <div className="flex justify-between items-center">
                           <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                            <div className={`w-8 h-8 ${getAvatarGradient(index + 1)} rounded-full flex items-center justify-center text-white font-bold text-sm`}>
                               {sessionItem.candidate.name.charAt(0)}
                             </div>
                             <div>
@@ -425,11 +360,11 @@ export default function EnhancedProDashboard() {
                       No pending referral requests
                     </div>
                   ) : (
-                    referralRequests.map((sessionItem) => (
+                    referralRequests.map((sessionItem, index) => (
                       <div key={sessionItem._id} className="px-6 py-3">
                         <div className="flex justify-between items-center">
                           <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                            <div className={`w-8 h-8 ${getAvatarGradient(index + 2)} rounded-full flex items-center justify-center text-white font-bold text-sm`}>
                               {sessionItem.candidate.name.charAt(0)}
                             </div>
                             <div>
@@ -460,7 +395,6 @@ export default function EnhancedProDashboard() {
               </div>
               
               <div className="divide-y divide-gray-100">
-                {/* Referral Bonuses */}
                 <div className="p-4">
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="font-semibold text-gray-700">Referral Bonuses</h3>
@@ -469,7 +403,6 @@ export default function EnhancedProDashboard() {
                   <p className="text-sm text-gray-600">Earn 10% when you refer candidates to other professionals</p>
                 </div>
 
-                {/* Offer Bonuses */}
                 <div className="p-4">
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="font-semibold text-gray-700">Offer Bonuses</h3>
@@ -502,11 +435,11 @@ export default function EnhancedProDashboard() {
                     No pending feedback submissions
                   </div>
                 ) : (
-                  pendingFeedback.map((sessionItem) => (
+                  pendingFeedback.map((sessionItem, index) => (
                     <div key={sessionItem._id} className="px-6 py-4">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                          <div className={`w-8 h-8 ${getAvatarGradient(index + 3)} rounded-full flex items-center justify-center text-white font-bold text-sm`}>
                             {sessionItem.candidate.name.charAt(0)}
                           </div>
                           <div>
@@ -540,11 +473,11 @@ export default function EnhancedProDashboard() {
                     No completed sessions yet
                   </div>
                 ) : (
-                  completedSessions.map((sessionItem) => (
+                  completedSessions.map((sessionItem, index) => (
                     <div key={sessionItem._id} className="px-6 py-4">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                          <div className={`w-8 h-8 ${getAvatarGradient(index + 4)} rounded-full flex items-center justify-center text-white font-bold text-sm`}>
                             {sessionItem.candidate.name.charAt(0)}
                           </div>
                           <div>
@@ -566,113 +499,113 @@ export default function EnhancedProDashboard() {
         </div>
 
         {/* Feedback Modal */}
-        {feedbackModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
-              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold">
-                    {feedbackModal.candidate.name.charAt(0)}
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900">
-                      Submit Feedback for {feedbackModal.candidate.name}
-                    </h3>
-                    <p className="text-gray-600">
-                      Session on {formatLongDate(feedbackModal.scheduledAt)}
-                    </p>
-                  </div>
+        <Modal
+          isOpen={!!feedbackModal}
+          onClose={() => setFeedbackModal(null)}
+          title={feedbackModal ? `Submit Feedback for ${feedbackModal.candidate.name}` : ''}
+          subtitle={feedbackModal ? `Session on ${formatLongDate(feedbackModal.scheduledAt)}` : ''}
+          maxWidth="3xl"
+          actions={
+            <>
+              <button
+                onClick={() => setFeedbackModal(null)}
+                className="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                disabled={submittingFeedback}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => feedbackModal && handleSubmitFeedback(feedbackModal._id)}
+                disabled={submittingFeedback || feedbackForm.feedback.length < 20}
+                className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold transition-colors"
+              >
+                {submittingFeedback ? 'Processing Payment...' : 'Submit Feedback & Get Paid'}
+              </button>
+            </>
+          }
+        >
+          {feedbackModal && (
+            <div className="space-y-8">
+              {/* Candidate Header */}
+              <div className="flex items-center space-x-4">
+                <div className={`w-12 h-12 ${getAvatarGradient(0)} rounded-full flex items-center justify-center text-white font-bold`}>
+                  {feedbackModal.candidate.name.charAt(0)}
                 </div>
-              </div>
-              
-              <div className="px-6 py-6 space-y-8">
-                {/* Rating Section */}
                 <div>
-                  <h4 className="text-lg font-bold text-gray-900 mb-4">Rate the Candidate</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <StarRating
-                        label="Cultural Fit"
-                        value={feedbackForm.culturalFitRating}
-                        onChange={(value) => setFeedbackForm(prev => ({ ...prev, culturalFitRating: value }))}
-                      />
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <StarRating
-                        label="Interest Level"
-                        value={feedbackForm.interestRating}
-                        onChange={(value) => setFeedbackForm(prev => ({ ...prev, interestRating: value }))}
-                      />
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <StarRating
-                        label="Technical Skills"
-                        value={feedbackForm.technicalRating}
-                        onChange={(value) => setFeedbackForm(prev => ({ ...prev, technicalRating: value }))}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Written Feedback */}
-                <div>
-                  <label className="block text-lg font-bold text-gray-900 mb-2">
-                    Written Feedback
-                  </label>
-                  <p className="text-sm text-gray-600 mb-3">
-                    Share your thoughts about the candidate's fit, skills, and potential (minimum 20 characters)
-                  </p>
-                  <textarea
-                    value={feedbackForm.feedback}
-                    onChange={(e) => setFeedbackForm(prev => ({ ...prev, feedback: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    rows={4}
-                    placeholder="What impressed you about this candidate? What areas could they improve? Would you recommend them for roles at your company?"
-                  />
-                  <div className="mt-2 flex justify-between items-center">
-                    <div className={`text-sm ${feedbackForm.feedback.length < 20 ? 'text-red-500' : 'text-gray-500'}`}>
-                      {feedbackForm.feedback.length}/500 characters {feedbackForm.feedback.length < 20 && '(minimum 20)'}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Internal Notes */}
-                <div>
-                  <label className="block text-lg font-bold text-gray-900 mb-2">
-                    Internal Notes
-                  </label>
-                  <p className="text-sm text-gray-600 mb-3">
-                    Optional notes for your team (not shared with the candidate)
-                  </p>
-                  <textarea
-                    value={feedbackForm.internalNotes}
-                    onChange={(e) => setFeedbackForm(prev => ({ ...prev, internalNotes: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    rows={3}
-                    placeholder="Internal notes for hiring decisions, follow-up actions, etc..."
-                  />
+                  <h4 className="text-lg font-semibold text-gray-900">{feedbackModal.candidate.name}</h4>
+                  <p className="text-gray-600">Session on {formatLongDate(feedbackModal.scheduledAt)}</p>
                 </div>
               </div>
 
-              <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3 bg-gray-50">
-                <button
-                  onClick={() => setFeedbackModal(null)}
-                  className="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition-colors"
-                  disabled={submittingFeedback}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleSubmitFeedback(feedbackModal._id)}
-                  disabled={submittingFeedback || feedbackForm.feedback.length < 20}
-                  className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold transition-colors"
-                >
-                  {submittingFeedback ? 'Processing Payment...' : 'Submit Feedback & Get Paid'}
-                </button>
+              {/* Rating Section */}
+              <div>
+                <h4 className="text-lg font-bold text-gray-900 mb-4">Rate the Candidate</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <StarRating
+                      label="Cultural Fit"
+                      value={feedbackForm.culturalFitRating}
+                      onChange={(value) => setFeedbackForm(prev => ({ ...prev, culturalFitRating: value }))}
+                    />
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <StarRating
+                      label="Interest Level"
+                      value={feedbackForm.interestRating}
+                      onChange={(value) => setFeedbackForm(prev => ({ ...prev, interestRating: value }))}
+                    />
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <StarRating
+                      label="Technical Skills"
+                      value={feedbackForm.technicalRating}
+                      onChange={(value) => setFeedbackForm(prev => ({ ...prev, technicalRating: value }))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Written Feedback */}
+              <div>
+                <label className="block text-lg font-bold text-gray-900 mb-2">
+                  Written Feedback
+                </label>
+                <p className="text-sm text-gray-600 mb-3">
+                  Share your thoughts about the candidate's fit, skills, and potential (minimum 20 characters)
+                </p>
+                <textarea
+                  value={feedbackForm.feedback}
+                  onChange={(e) => setFeedbackForm(prev => ({ ...prev, feedback: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  rows={4}
+                  placeholder="What impressed you about this candidate? What areas could they improve? Would you recommend them for roles at your company?"
+                />
+                <div className="mt-2 flex justify-between items-center">
+                  <div className={`text-sm ${feedbackForm.feedback.length < 20 ? 'text-red-500' : 'text-gray-500'}`}>
+                    {feedbackForm.feedback.length}/500 characters {feedbackForm.feedback.length < 20 && '(minimum 20)'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Internal Notes */}
+              <div>
+                <label className="block text-lg font-bold text-gray-900 mb-2">
+                  Internal Notes
+                </label>
+                <p className="text-sm text-gray-600 mb-3">
+                  Optional notes for your team (not shared with the candidate)
+                </p>
+                <textarea
+                  value={feedbackForm.internalNotes}
+                  onChange={(e) => setFeedbackForm(prev => ({ ...prev, internalNotes: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  rows={3}
+                  placeholder="Internal notes for hiring decisions, follow-up actions, etc..."
+                />
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </Modal>
       </div>
     </div>
   );

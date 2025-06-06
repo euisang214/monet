@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAuthGuard } from '@/hooks/useAuthGuard';
+import { formatCurrencyDisplay, apiRequest } from '@/lib/utils';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 interface Professional {
   _id: string;
@@ -29,8 +31,12 @@ interface SearchFilters {
 }
 
 export default function CandidateSearch() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  const { data: session } = useSession();
+  const { isAuthenticated, isLoading } = useAuthGuard({ 
+    requiredRole: 'candidate',
+    requireProfileComplete: false // Allow incomplete profiles to browse
+  });
+  
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [filteredProfessionals, setFilteredProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,34 +51,11 @@ export default function CandidateSearch() {
   const [selectedPro, setSelectedPro] = useState<Professional | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
 
-  // Check authentication
   useEffect(() => {
-    if (status === 'loading') return; // Still loading
-
-    if (!session) {
-      // Not authenticated, redirect to signin
-      router.push('/auth/signin');
-      return;
-    }
-
-    if (!session.user?.role) {
-      // No role set, redirect to setup
-      router.push('/auth/setup');
-      return;
-    }
-
-    if (session.user.role !== 'candidate') {
-      // Wrong role, redirect to professional dashboard
-      router.push('/professional/dashboard');
-      return;
-    }
-  }, [session, status, router]);
-
-  useEffect(() => {
-    if (session?.user?.id) {
+    if (isAuthenticated) {
       fetchProfessionals();
     }
-  }, [session]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     filterProfessionals();
@@ -80,11 +63,9 @@ export default function CandidateSearch() {
 
   const fetchProfessionals = async () => {
     try {
-      const response = await fetch('/api/professional/search');
-      const data = await response.json();
-      
-      if (data.success) {
-        setProfessionals(data.data.professionals || []);
+      const result = await apiRequest('/api/professional/search');
+      if (result.success) {
+        setProfessionals(result.data?.professionals || []);
       }
     } catch (error) {
       console.error('Error fetching professionals:', error);
@@ -108,21 +89,19 @@ export default function CandidateSearch() {
       );
     }
 
-    // Industry filter
+    // Apply filters
     if (filters.industry) {
       filtered = filtered.filter(pro => 
         pro.industry.toLowerCase().includes(filters.industry.toLowerCase())
       );
     }
 
-    // Company filter
     if (filters.company) {
       filtered = filtered.filter(pro => 
         pro.company.toLowerCase().includes(filters.company.toLowerCase())
       );
     }
 
-    // Expertise filter
     if (filters.expertise) {
       filtered = filtered.filter(pro => 
         pro.expertise.some(exp => 
@@ -131,13 +110,9 @@ export default function CandidateSearch() {
       );
     }
 
-    // Rate filter
+    // Rate and experience filters
     filtered = filtered.filter(pro => 
-      pro.sessionRateCents <= filters.maxRate * 100
-    );
-
-    // Experience filter
-    filtered = filtered.filter(pro => 
+      pro.sessionRateCents <= filters.maxRate * 100 &&
       pro.yearsExperience >= filters.minExperience
     );
 
@@ -150,35 +125,24 @@ export default function CandidateSearch() {
   };
 
   const renderStars = (rating: number) => {
-    const stars = [];
-    for (let i = 1; i <= 5; i++) {
-      stars.push(
-        <span
-          key={i}
-          className={`text-sm ${i <= rating ? 'text-yellow-400' : 'text-gray-300'}`}
-        >
-          ★
-        </span>
-      );
-    }
-    return stars;
+    return Array.from({ length: 5 }, (_, i) => (
+      <span
+        key={i}
+        className={`text-sm ${i < rating ? 'text-yellow-400' : 'text-gray-300'}`}
+      >
+        ★
+      </span>
+    ));
   };
 
-  // Show loading while checking auth
-  if (status === 'loading' || loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Finding professionals for you...</p>
-        </div>
-      </div>
-    );
+  // Show loading while checking auth or fetching data
+  if (isLoading || loading) {
+    return <LoadingSpinner message="Finding professionals for you..." />;
   }
 
-  // Don't render if not authenticated or wrong role
-  if (!session?.user?.id || session.user.role !== 'candidate') {
-    return null; // Will redirect via useEffect
+  // Don't render if not authenticated (will redirect via useAuthGuard)
+  if (!isAuthenticated) {
+    return null;
   }
 
   return (
@@ -201,11 +165,11 @@ export default function CandidateSearch() {
               </Link>
               <div className="flex items-center space-x-2">
                 <img 
-                  src={session.user.image || undefined} 
-                  alt={session.user.name || 'User'} 
+                  src={session?.user?.image || undefined} 
+                  alt={session?.user?.name || 'User'} 
                   className="w-8 h-8 rounded-full"
                 />
-                <span className="text-gray-600">{session.user.name}</span>
+                <span className="text-gray-600">{session?.user?.name}</span>
               </div>
             </div>
           </div>
@@ -396,7 +360,7 @@ export default function CandidateSearch() {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-2xl font-bold text-gray-900">
-                          ${(pro.sessionRateCents / 100).toFixed(0)}
+                          {formatCurrencyDisplay(pro.sessionRateCents)}
                         </div>
                         <div className="text-xs text-gray-500">per 30-min session</div>
                       </div>
@@ -414,7 +378,7 @@ export default function CandidateSearch() {
           )}
         </div>
 
-        {/* Booking Modal - Same as before */}
+        {/* Booking Modal - Simplified placeholder */}
         {showBookingModal && selectedPro && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
@@ -437,7 +401,7 @@ export default function CandidateSearch() {
               <div className="px-6 py-6">
                 <div className="text-center mb-6">
                   <div className="text-3xl font-bold text-indigo-600 mb-2">
-                    ${(selectedPro.sessionRateCents / 100).toFixed(2)}
+                    {formatCurrencyDisplay(selectedPro.sessionRateCents)}
                   </div>
                   <div className="text-gray-600 mb-4">
                     30-minute video session
@@ -455,48 +419,6 @@ export default function CandidateSearch() {
                     </div>
                   </div>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h4 className="font-semibold text-gray-900 mb-3">What you'll get:</h4>
-                    <ul className="text-sm text-gray-600 space-y-2">
-                      <li className="flex items-center space-x-2">
-                        <span className="text-green-500">✓</span>
-                        <span>30-minute video call</span>
-                      </li>
-                      <li className="flex items-center space-x-2">
-                        <span className="text-green-500">✓</span>
-                        <span>Professional feedback</span>
-                      </li>
-                      <li className="flex items-center space-x-2">
-                        <span className="text-green-500">✓</span>
-                        <span>Career advice and insights</span>
-                      </li>
-                      <li className="flex items-center space-x-2">
-                        <span className="text-green-500">✓</span>
-                        <span>Opportunity for referrals</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="bg-indigo-50 rounded-lg p-4">
-                    <h4 className="font-semibold text-indigo-900 mb-3">About {selectedPro.name}:</h4>
-                    <div className="text-sm text-indigo-800 space-y-1">
-                      <p><strong>Experience:</strong> {selectedPro.yearsExperience} years</p>
-                      <p><strong>Industry:</strong> {selectedPro.industry}</p>
-                      <div>
-                        <strong>Expertise:</strong>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {selectedPro.expertise.slice(0, 4).map((skill, index) => (
-                            <span key={index} className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs rounded">
-                              {skill}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
 
               <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3 bg-gray-50">
@@ -508,7 +430,6 @@ export default function CandidateSearch() {
                 </button>
                 <button
                   onClick={() => {
-                    // TODO: Implement actual booking with Stripe using session.user.id
                     alert('Booking system integration coming soon!');
                     setShowBookingModal(false);
                   }}

@@ -151,6 +151,134 @@ export function generateTimeSlots(
   return slots;
 }
 
+// Add these to existing src/lib/utils.ts around line 150
+
+/**
+ * Format date for display in components (replaces duplicate formatDate functions)
+ */
+export function formatDate(dateString: string, includeTime = true): string {
+  const date = new Date(dateString);
+  const options: Intl.DateTimeFormatOptions = includeTime 
+    ? { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }
+    : { month: 'short', day: 'numeric' };
+  return date.toLocaleDateString('en-US', options);
+}
+
+/**
+ * Format time only from date string
+ */
+export function formatTime(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleTimeString('en-US', { 
+    hour: 'numeric', 
+    minute: '2-digit',
+    hour12: true 
+  });
+}
+
+/**
+ * Format long date for detailed displays
+ */
+export function formatLongDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+}
+
+/**
+ * Get status badge classes for sessions
+ */
+export function getStatusBadgeClasses(status: string): string {
+  const badges: Record<string, string> = {
+    requested: 'bg-amber-100 text-amber-800',
+    confirmed: 'bg-green-100 text-green-800',
+    completed: 'bg-blue-100 text-blue-800',
+    cancelled: 'bg-red-100 text-red-800',
+    pending: 'bg-yellow-100 text-yellow-800'
+  };
+  
+  return badges[status] || 'bg-gray-100 text-gray-800';
+}
+
+/**
+ * Generate consistent gradient classes for user avatars
+ */
+export function getAvatarGradient(index: number = 0): string {
+  const gradients = [
+    'from-indigo-500 to-purple-600',
+    'from-green-500 to-emerald-600',
+    'from-blue-500 to-cyan-600',
+    'from-purple-500 to-pink-600',
+    'from-yellow-500 to-orange-600',
+    'from-red-500 to-pink-600'
+  ];
+  
+  return `bg-gradient-to-br ${gradients[index % gradients.length]}`;
+}
+
+/**
+ * Debounced search function for real-time search
+ */
+export function createDebouncedSearch<T>(
+  searchFunction: (query: string) => Promise<T[]>,
+  delay: number = 300
+) {
+  let timeoutId: NodeJS.Timeout;
+  
+  return (query: string): Promise<T[]> => {
+    return new Promise((resolve) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(async () => {
+        try {
+          const results = await searchFunction(query);
+          resolve(results);
+        } catch (error) {
+          console.error('Search error:', error);
+          resolve([]);
+        }
+      }, delay);
+    });
+  };
+}
+
+/**
+ * Common API fetch wrapper with error handling
+ */
+export async function apiRequest<T>(
+  url: string, 
+  options: RequestInit = {}
+): Promise<{ success: boolean; data?: T; error?: string }> {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || `HTTP ${response.status}: ${response.statusText}`
+      };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+  }
+}
+
 /**
  * Validate session timing (must be at least 2 hours in future)
  */

@@ -1,88 +1,73 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
+import { NextRequest } from 'next/server';
+import { withDB, errorResponse, successResponse } from '@/lib/api/error-handler';
 import Session from '@/lib/models/Session';
 
 /**
- * GET /api/sessions/professional/[id]
- * Fetch all sessions for a professional
+ * GET /api/professional/[id]
+ * Fetch all sessions for a professional with earnings calculation
  */
-export async function GET(
+export const GET = withDB(async (
   request: NextRequest,
   { params }: { params: { id: string } }
-) {
-  try {
-    await connectDB();
-    
-    const professionalId = params.id;
+) => {
+  const professionalId = params.id;
 
-    if (!professionalId) {
-      return NextResponse.json(
-        { error: 'Professional ID is required' },
-        { status: 400 }
-      );
-    }
-
-    const now = new Date();
-
-    // Fetch upcoming sessions (requested or confirmed, in the future)
-    const upcomingSessions = await Session.find({
-      professionalId,
-      scheduledAt: { $gte: now },
-      status: { $in: ['requested', 'confirmed'] }
-    })
-    .populate('candidate', 'name email targetRole targetIndustry')
-    .sort({ scheduledAt: 1 })
-    .lean();
-
-    // Fetch completed sessions (completed status, or past confirmed sessions)
-    const completedSessions = await Session.find({
-      professionalId,
-      $or: [
-        { status: 'completed' },
-        { 
-          status: 'confirmed',
-          scheduledAt: { $lt: now }
-        }
-      ]
-    })
-    .populate('candidate', 'name email targetRole targetIndustry')
-    .sort({ scheduledAt: -1 })
-    .limit(50) // Limit to recent 50 completed sessions
-    .lean();
-
-    // Get pending sessions (requested but not yet confirmed)
-    const pendingSessions = await Session.find({
-      professionalId,
-      status: 'requested',
-      scheduledAt: { $gte: now }
-    })
-    .populate('candidate', 'name email targetRole targetIndustry resumeUrl')
-    .sort({ createdAt: 1 })
-    .lean();
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        upcoming: upcomingSessions,
-        completed: completedSessions,
-        pending: pendingSessions,
-        stats: {
-          totalUpcoming: upcomingSessions.length,
-          totalCompleted: completedSessions.length,
-          totalPending: pendingSessions.length,
-          totalEarningsThisMonth: await calculateMonthlyEarnings(professionalId)
-        }
-      }
-    });
-
-  } catch (error) {
-    console.error('Professional sessions fetch error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+  if (!professionalId) {
+    return errorResponse('Professional ID is required', 400);
   }
-}
+
+  const now = new Date();
+
+  // Fetch upcoming sessions (requested or confirmed, in the future)
+  const upcomingSessions = await Session.find({
+    professionalId,
+    scheduledAt: { $gte: now },
+    status: { $in: ['requested', 'confirmed'] }
+  })
+  .populate('candidate', 'name email targetRole targetIndustry')
+  .sort({ scheduledAt: 1 })
+  .lean();
+
+  // Fetch completed sessions (completed status, or past confirmed sessions)
+  const completedSessions = await Session.find({
+    professionalId,
+    $or: [
+      { status: 'completed' },
+      { 
+        status: 'confirmed',
+        scheduledAt: { $lt: now }
+      }
+    ]
+  })
+  .populate('candidate', 'name email targetRole targetIndustry')
+  .sort({ scheduledAt: -1 })
+  .limit(50) // Limit to recent 50 completed sessions
+  .lean();
+
+  // Get pending sessions (requested but not yet confirmed)
+  const pendingSessions = await Session.find({
+    professionalId,
+    status: 'requested',
+    scheduledAt: { $gte: now }
+  })
+  .populate('candidate', 'name email targetRole targetIndustry resumeUrl')
+  .sort({ createdAt: 1 })
+  .lean();
+
+  const monthlyEarnings = await calculateMonthlyEarnings(professionalId);
+
+  return successResponse({
+    upcoming: upcomingSessions,
+    completed: completedSessions,
+    pending: pendingSessions,
+    stats: {
+      totalUpcoming: upcomingSessions.length,
+      totalCompleted: completedSessions.length,
+      totalPending: pendingSessions.length,
+      totalEarningsThisMonth: monthlyEarnings
+    }
+  });
+});
 
 /**
  * Calculate total earnings for current month
