@@ -6,28 +6,31 @@
     "dev": "NODE_OPTIONS='--inspect' next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "dev:fresh": "npm run setup-mock && npm run dev",
+    "setup-mock": "NODE_ENV=development tsx scripts/mockData.ts"
   },
   "dependencies": {
+    "@auth/mongodb-adapter": "^2.4.2",
+    "date-fns": "^3.0.0",
+    "mongoose": "^8.0.0",
+    "next": "15.3.3",
+    "next-auth": "^4.24.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "next": "15.3.3",
-    "mongoose": "^8.0.0",
     "stripe": "^14.0.0",
-    "date-fns": "^3.0.0",
-    "next-auth": "^4.24.0",
-    "zod": "^3.22.0",
-    "@auth/mongodb-adapter": "^2.4.2"
+    "zod": "^3.22.0"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
-    "@eslint/eslintrc": "^3"
+    "tailwindcss": "^4",
+    "tsx": "^4.19.4",
+    "typescript": "^5"
   }
 }
