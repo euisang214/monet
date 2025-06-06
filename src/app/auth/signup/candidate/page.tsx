@@ -86,9 +86,9 @@ export default function CandidateSignupPage() {
       const result = await response.json();
       
       if (result.success) {
-        // Show success message and redirect to candidate search
-        alert(`Welcome to Monet! Please check ${data.schoolEmail} for verification. You've pledged ${(data.offerBonusCents / 100).toFixed(0)} as your offer bonus.`);
-        router.push('/candidate/search');
+        // Show success message and redirect to candidate dashboard
+        alert(`Welcome to Monet! Please check ${data.schoolEmail} for verification. You've pledged $${(data.offerBonusCents / 100).toFixed(0)} as your offer bonus.`);
+        router.push('/candidate/dashboard');
       } else {
         alert(result.error || 'Failed to create account. Please try again.');
       }
