@@ -1,4 +1,10 @@
 import mongoose from 'mongoose';
+
+// Load environment variables from .env.local so that `MONGODB_URI` and others
+// are available when this script runs outside of Next.js
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+
 import { connectDB, disconnectDB } from '../src/lib/models/db';
 import User from '../src/lib/models/User';
 import Session from '../src/lib/models/Session';
