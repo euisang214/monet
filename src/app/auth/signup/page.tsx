@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Navigation from "@/components/ui/Navigation";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -14,41 +15,8 @@ export default function SignUpPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <Link href="/" className="text-2xl font-bold text-indigo-600">
-                  Monet
-                </Link>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link 
-                href="/about" 
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                About
-              </Link>
-              <Link 
-                href="/how-it-works" 
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                How It Works
-              </Link>
-              <Link 
-                href="/auth/signin" 
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Login
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
-
+      <Navigation variant="public" />
+      
       {/* Main Content */}
       <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
