@@ -296,15 +296,21 @@ export default function StripeCheckout({
         </div>
       </div>
 
-      {/* Development Notice */}
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+      {/* Test Mode Instructions */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div className="flex items-start space-x-2">
-          <div className="text-amber-600 mt-0.5">⚠️</div>
+          <div className="text-blue-600 mt-0.5">🧪</div>
           <div>
-            <p className="text-sm text-amber-700">
-              <strong>Development Mode:</strong> This demo simulates the Stripe Checkout flow. 
-              In production, you'll be redirected to Stripe's secure payment page.
+            <h4 className="font-semibold text-blue-900 mb-1">Test Mode Active</h4>
+            <p className="text-sm text-blue-800 mb-2">
+              Use these test card numbers for development:
             </p>
+            <div className="text-xs text-blue-700 space-y-1">
+              <div><strong>Success:</strong> 4242 4242 4242 4242</div>
+              <div><strong>Decline:</strong> 4000 0000 0000 0002</div>
+              <div><strong>3D Secure:</strong> 4000 0000 0000 3220</div>
+              <div>Expiry: Any future date | CVC: Any 3 digits</div>
+            </div>
           </div>
         </div>
       </div>
