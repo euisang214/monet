@@ -1,6 +1,6 @@
 # Monet - Candidate-to-Professional Platform
 
-A serverless web application that connects job-seeking candidates with experienced professionals for paid virtual coffee chats. Built with Next.js, MongoDB Atlas, Stripe Connect, and AWS S3.
+A serverless web application that connects job-seeking candidates with experienced professionals for paid virtual coffee chats. Built with Next.js, MongoDB Atlas, Stripe Connect, and AWS services.
 
 ## 🎯 Business Model
 
@@ -15,9 +15,12 @@ A serverless web application that connects job-seeking candidates with experienc
 - **Database**: MongoDB Atlas with Mongoose ODM
 - **Payments**: Stripe Connect for split payouts and KYC
 - **File Storage**: AWS S3 with presigned URLs for secure uploads
+- **Email**: AWS SES for transactional emails
 - **Authentication**: NextAuth.js with Google/LinkedIn OAuth
-- **Infrastructure**: Vercel Functions (serverless)
-- **Monitoring**: Sentry for error tracking
+- **Video Meetings**: Zoom SDK integration
+- **Infrastructure**: SST (AWS CDK) + Vercel Functions
+- **Monitoring**: Sentry alternatives (Axiom, LogRocket, or Highlight)
+- **Testing**: Vitest + Playwright (≥95% coverage target)
 
 ## 🚀 Quick Start
 
@@ -26,8 +29,9 @@ A serverless web application that connects job-seeking candidates with experienc
 - Node.js 18+ and npm
 - MongoDB Atlas account
 - Stripe Connect account
-- AWS account (for S3 file storage)
+- AWS account (for S3, SES, and SST infrastructure)
 - Google OAuth credentials (for calendar integration)
+- Zoom SDK credentials
 
 ### 1. Clone and Install
 
@@ -54,55 +58,45 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your-secret-key
 
-# Google OAuth
+# Google OAuth & Calendar
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 
-# AWS S3 Configuration
+# AWS Configuration
 AWS_REGION=us-east-1
 AWS_ACCESS_KEY_ID=your-access-key-id
 AWS_SECRET_ACCESS_KEY=your-secret-access-key
 AWS_S3_BUCKET_NAME=monet-file-uploads-dev
+
+# AWS SES
+AWS_SES_FROM_EMAIL=notifications@yourdomain.com
+AWS_SES_REGION=us-east-1
+
+# Zoom SDK
+ZOOM_API_KEY=your-zoom-api-key
+ZOOM_API_SECRET=your-zoom-api-secret
+ZOOM_WEBHOOK_SECRET_TOKEN=your-webhook-secret
+
+# Error Monitoring (choose one)
+# AXIOM_TOKEN=your-axiom-token
+# LOGROCKET_APP_ID=your-logrocket-id
+# HIGHLIGHT_PROJECT_ID=your-highlight-id
 ```
 
-### 3. AWS S3 Setup (Detailed Instructions)
-
-File uploads (resumes, profile pictures) are stored securely in AWS S3. Follow these step-by-step instructions:
+### 3. AWS S3 Setup
 
 #### Step 1: Create AWS Account and IAM User
 
-1. **Sign up for AWS** at https://aws.amazon.com if you don't have an account
-2. **Log into AWS Console** and search for "IAM" in the services menu
-3. **Create a new IAM user:**
-   - Click "Users" → "Add users"
+1. **Sign up for AWS** at https://aws.amazon.com
+2. **Create IAM user:**
    - Username: `monet-s3-user`
-   - Select "Programmatic access" (not console access)
-   - Click "Next: Permissions"
-
-4. **Set permissions:**
-   - Click "Attach existing policies directly"
-   - Search for "AmazonS3FullAccess" and check it
-   - Click "Next: Tags" → "Next: Review" → "Create user"
-
-5. **Save credentials:**
-   - **IMPORTANT**: Copy your `Access Key ID` and `Secret Access Key`
-   - Store them securely - you won't see the secret key again!
+   - Attach policy: `AmazonS3FullAccess`
+   - Save Access Key ID and Secret Access Key
 
 #### Step 2: Create S3 Bucket
 
-1. **Navigate to S3** in the AWS Console
-2. **Click "Create bucket"**
-3. **Configure bucket:**
-   - Bucket name: `monet-file-uploads-dev` (must be globally unique)
-   - Region: `us-east-1` (or your preferred region)
-   - Leave other settings as default
-   - Click "Create bucket"
-
-#### Step 3: Configure Bucket CORS Policy
-
-1. **Open your bucket** and click the "Permissions" tab
-2. **Scroll to "Cross-origin resource sharing (CORS)"**
-3. **Click "Edit" and paste this configuration:**
+1. **Create bucket:** `monet-file-uploads-dev` (globally unique name)
+2. **Set CORS policy:**
 
 ```json
 [
@@ -115,12 +109,7 @@ File uploads (resumes, profile pictures) are stored securely in AWS S3. Follow t
 ]
 ```
 
-4. **Click "Save changes"**
-
-#### Step 4: Set Bucket Policy for Public Read Access
-
-1. **In the same "Permissions" tab, scroll to "Bucket policy"**
-2. **Click "Edit" and paste this policy** (replace `monet-file-uploads-dev` with your bucket name):
+3. **Set bucket policy for public read access:**
 
 ```json
 {
@@ -137,43 +126,42 @@ File uploads (resumes, profile pictures) are stored securely in AWS S3. Follow t
 }
 ```
 
-3. **Click "Save changes"**
+### 4. AWS SES Setup
 
-#### Step 5: Update Environment Variables
+1. **Verify your domain** in AWS SES console
+2. **Request production access** (removes sandbox limitations)
+3. **Configure DKIM and SPF** records in your DNS
 
-Add your AWS credentials to `.env.local`:
+### 5. Zoom SDK Setup
+
+1. **Create Zoom Marketplace app** at https://marketplace.zoom.us/
+2. **Choose SDK app type**
+3. **Get API Key and Secret**
+4. **Configure webhook endpoints** pointing to your domain
+
+### 6. Database Setup
+
+The application uses MongoDB Atlas with the following collections:
+- **User**: Candidates and professionals with role-based fields
+- **Session**: Booking and meeting details with status tracking
+- **ProfessionalFeedback**: Structured feedback with ratings
+- **CandidateRating**: Professional ratings by candidates
+- **Offer**: Job offer tracking for bonus payouts
+- **ReferralEdge**: Multi-level referral payout tracking
+
+### 7. Load Development Data
 
 ```bash
-AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=AKIA... # Your Access Key ID from Step 1
-AWS_SECRET_ACCESS_KEY=... # Your Secret Access Key from Step 1
-AWS_S3_BUCKET_NAME=monet-file-uploads-dev # Your bucket name from Step 2
+npm run setup-mock
 ```
 
-#### Step 6: Test File Upload
+This creates realistic sample data including:
+- 3 candidates (Alice, John, Sarah)
+- 5 professionals from Goldman Sachs, McKinsey, KKR, Bain, JPM
+- Various session statuses (pending, confirmed, completed)
+- Sample feedback, ratings, and referral chains
 
-1. **Start your development server:** `npm run dev`
-2. **Go to** http://localhost:3000/auth/signup
-3. **Choose "Professional" and upload a resume**
-4. **Check your S3 bucket** - you should see the uploaded file!
-
-### 4. Database Setup
-
-The application will automatically connect to MongoDB Atlas. Models are defined in `src/lib/models/`:
-
-- **User**: Candidates and professionals with extended signup fields
-- **Session**: Booking and meeting details
-- **Feedback**: Professional feedback and candidate ratings
-- **Offer**: Job offer tracking for bonuses
-- **ReferralEdge**: Multi-level referral payouts
-
-### 5. Stripe Setup
-
-1. Create a Stripe Connect platform account
-2. Configure webhooks pointing to `/api/webhooks/stripe`
-3. Add webhook events: `payment_intent.succeeded`, `transfer.created`, etc.
-
-### 6. Run Development Server
+### 8. Run Development Server
 
 ```bash
 npm run dev
@@ -193,27 +181,45 @@ src/
 │   │   ├── professional/       # Professional onboarding & search
 │   │   ├── candidate/          # Candidate signup & management
 │   │   ├── upload/             # AWS S3 file upload handling
-│   │   └── webhooks/           # Stripe webhook handlers
+│   │   ├── calendar/           # Google Calendar integration
+│   │   ├── zoom/               # Zoom SDK meeting management
+│   │   └── webhooks/           # Stripe & Zoom webhook handlers
 │   ├── auth/                   # Authentication pages
-│   │   ├── signup/             # Multi-step signup flows
+│   │   ├── setup/              # Role selection & profile completion
 │   │   │   ├── candidate/      # 3-step candidate onboarding
 │   │   │   └── professional/   # 3-step professional onboarding
-│   │   └── signin/             # Sign-in page
+│   │   ├── signin/             # OAuth sign-in page
+│   │   └── signup/             # Redirects to signin (OAuth-only)
 │   ├── components/             # React components
-│   │   ├── ProDashboard.tsx    # Professional dashboard
-│   │   ├── CandidateSearch.tsx # Professional search & booking
-│   │   └── EnhancedDashboards/ # Phase 6 dashboard components
+│   │   ├── EnhancedCandidateDashboard.tsx
+│   │   ├── EnhancedProDashboard.tsx
+│   │   ├── CandidateSearch.tsx
+│   │   └── ui/                 # Reusable UI components
 │   ├── candidate/              # Candidate pages
+│   │   ├── dashboard/          # Split-pane dashboard with sessions
+│   │   └── search/             # Professional search & booking
 │   ├── professional/           # Professional pages
+│   │   └── dashboard/          # Earnings & session management
 │   ├── about/                  # About page
 │   ├── how-it-works/           # How it works page
-│   └── globals.css             # Tailwind styles + animations
+│   └── globals.css             # Tailwind styles + physics animations
 ├── lib/
 │   ├── models/                 # Mongoose schemas
 │   ├── auth.ts                 # NextAuth configuration
-│   ├── db.ts                   # Database connection
+│   ├── db.ts                   # Database connection with pooling
 │   ├── upload.ts               # S3 file upload utilities
-│   └── utils.ts                # Helper functions
+│   ├── calendar.ts             # Google Calendar integration
+│   ├── zoom.ts                 # Zoom SDK utilities
+│   ├── email.ts                # AWS SES email templates
+│   └── utils.ts                # Helper functions & API wrapper
+├── hooks/
+│   └── useAuthGuard.ts         # Role-based route protection
+├── components/ui/              # Shared UI components
+│   ├── LoadingSpinner.tsx      # Loading states
+│   ├── Modal.tsx               # Accessible modal component
+│   ├── Navigation.tsx          # Multi-variant navigation
+│   └── SessionCard.tsx         # Session display component
+└── middleware.ts               # NextAuth route protection
 ```
 
 ## 💰 Money Flow Architecture
@@ -236,79 +242,32 @@ Candidate's first chat at Company X → Candidate accepts offer at X →
 First chat professional gets candidate's pre-committed bonus
 ```
 
-## 🔧 New Features (Phases 5-6)
-
-### Phase 5: Advanced Signup Flows
-
-#### Role Selection System
-- **Smart role picker** with visual indicators and benefit tags
-- **Candidate vs Professional** paths with different requirements
-- **Physics-based animations** throughout signup process
-
-#### Candidate Signup (3 Steps)
-**Step 1: Academic Verification**
-- School email verification (`.edu` domain validation)
-- LinkedIn profile integration for auto-population
-- Resume upload with drag-and-drop interface
-
-**Step 2: Profile Completion**
-- Profile picture upload with live preview
-- Academic details (school, major, minor, GPA, clubs)
-- Auto-populated from LinkedIn data
-
-**Step 3: Offer Bonus Pledge**
-- Customizable offer bonus ($100-$1,000 range)
-- Complete explanation of offer bonus system
-- Optional payment method setup (skippable)
-
-#### Professional Signup (3 Steps)
-**Step 1: Professional Verification**
-- Work email verification with company domain checking
-- LinkedIn profile integration
-- Resume/CV upload
-
-**Step 2: Professional Profile**
-- Industry-specific profile fields
-- Session rate configuration ($10-$500 range)
-- Professional bio and expertise areas
-- Profile picture upload
-
-**Step 3: Earnings Setup**
-- Stripe Connect onboarding integration
-- Banking information setup (optional)
-- Earnings projection calculator
-
-### Phase 6: Enhanced Dashboards
-
-#### Professional Dashboard Updates
-- **Split-pane layout** with upcoming chats and inbound requests
-- **Referral tracking** - separate sections for candidate referrals vs professional referrals
-- **Enhanced earnings tracking** - session fees vs referral/offer bonuses
-- **Feedback management** - pending submissions vs completed feedback
-- **Real-time notifications** for new session requests
-
-#### Candidate Dashboard Updates
-- **Upcoming sessions** with join buttons and professional details
-- **Enhanced mentor search** with advanced filtering
-- **Professional profile popups** with detailed information
-- **Request to chat** functionality with time slot selection
-- **Session history** with feedback received
-
 ## 🛠️ Core APIs
 
-### Authentication & Signup
-- `POST /api/candidate/signup` - Complete candidate registration
-- `POST /api/professional/onboard` - Professional account creation
-- `GET /api/auth/[...nextauth]` - NextAuth.js authentication
-
-### File Upload System
-- `POST /api/upload` - Generate S3 presigned URLs for secure file uploads
-- `DELETE /api/upload` - Delete files from S3 (cleanup)
+### Authentication & Profile Management
+- `POST /api/auth/setup` - Set user role after OAuth
+- `POST /api/auth/complete-profile` - Complete role-specific profile
+- `GET /api/auth/profile/[id]` - Get profile data for completion
 
 ### Session Management
-- `POST /api/sessions/book` - Create session & payment intent
+- `POST /api/sessions/book` - Create session & Stripe PaymentIntent
 - `POST /api/sessions/[id]/confirm` - Professional accepts/declines
+- `GET /api/sessions/candidate/[id]` - Get candidate's sessions
 - `GET /api/sessions/professional/[id]` - Get professional's sessions
+
+### File Upload System
+- `POST /api/upload` - Generate S3 presigned URLs for secure uploads
+- `DELETE /api/upload` - Delete files from S3 (cleanup)
+
+### Calendar Integration
+- `GET /api/calendar/availability` - Get user's free/busy times
+- `POST /api/calendar/events` - Create calendar events for sessions
+- `PUT /api/calendar/availability` - Update manual availability
+
+### Video Meetings
+- `POST /api/zoom/meetings` - Create Zoom meetings for sessions
+- `GET /api/zoom/meetings/[id]` - Get meeting details
+- `POST /api/webhooks/zoom` - Handle Zoom webhook events
 
 ### Feedback & Payouts
 - `POST /api/feedback/professional` - Submit feedback & trigger payouts
@@ -321,6 +280,83 @@ First chat professional gets candidate's pre-committed bonus
 ### Offer Tracking
 - `POST /api/offers` - Report job offer
 - `PUT /api/offers` - Accept offer & trigger bonus payout
+
+## 🎨 Design System
+
+### Physics-Based Animations
+- **Spring effects** on primary actions with cubic-bezier bounce
+- **Gravity transitions** for navigation and form changes
+- **Smooth progress bars** with momentum-based easing
+- **Interactive hover states** with scale and shadow effects
+
+### Component Architecture
+- **Split-pane dashboards** for optimal information density
+- **Progressive disclosure** in signup flows
+- **Real-time status updates** for sessions and payments
+- **Responsive design** optimized for mobile and desktop
+
+## 🧪 Testing Strategy
+
+### Unit Tests (Vitest)
+```bash
+npm run test              # Run unit tests
+npm run test:watch        # Watch mode for development
+npm run test:coverage     # Coverage report (target: ≥95%)
+```
+
+### Integration Tests (Playwright)
+```bash
+npm run test:e2e          # Run end-to-end tests
+npm run test:e2e:ui       # Run with UI mode
+```
+
+### Test Structure
+```
+tests/
+├── unit/                 # Vitest unit tests
+│   ├── lib/              # Library function tests
+│   ├── api/              # API route tests
+│   └── components/       # Component tests
+├── integration/          # Playwright E2E tests
+│   ├── auth.spec.ts      # Authentication flows
+│   ├── booking.spec.ts   # Session booking flow
+│   ├── payments.spec.ts  # Payment processing
+│   └── feedback.spec.ts  # Feedback & payout flow
+└── fixtures/             # Test data and utilities
+```
+
+### Key Test Scenarios
+- **Authentication**: OAuth flow → role selection → profile completion
+- **Booking**: Search → book → payment → confirmation
+- **Session**: Join → complete → feedback → payout
+- **Referrals**: Multi-level referral chain payouts
+- **Offers**: Report → accept → bonus payout
+
+## 📊 Infrastructure as Code (SST)
+
+### Stack Configuration
+```bash
+npm run sst:dev           # Deploy to development
+npm run sst:deploy        # Deploy to production
+npm run sst:remove        # Remove stacks
+```
+
+### Stack Architecture
+```
+stacks/
+├── WebStack.ts           # Vercel deployment & environment
+├── StorageStack.ts       # S3 buckets & CloudFront CDN
+├── EmailStack.ts         # SES configuration & templates
+├── MonitoringStack.ts    # CloudWatch & alerts
+└── sst.config.ts         # SST configuration
+```
+
+### AWS Resources Managed
+- **S3 Buckets**: File storage with lifecycle policies
+- **CloudFront**: CDN for file delivery
+- **SES**: Email sending with domain verification
+- **CloudWatch**: Logs and metrics
+- **Lambda**: Scheduled functions for cleanup
 
 ## 📊 File Upload System
 
@@ -341,68 +377,50 @@ First chat professional gets candidate's pre-committed bonus
 4. Store S3 URL in MongoDB user record
 5. Display uploaded file with preview
 
-## 🎨 Design System
+## 🔄 Calendar Integration
 
-### Physics-Based Animations
-- **Spring effects** on primary actions with cubic-bezier bounce
-- **Gravity transitions** for navigation and form changes
-- **Smooth progress bars** with momentum-based easing
-- **Interactive hover states** with scale and shadow effects
+### Google Calendar Sync
+- **OAuth scope**: `https://www.googleapis.com/auth/calendar.events`
+- **Free/busy queries** for availability checking
+- **Automatic event creation** for confirmed sessions
+- **Manual availability** editing with override capability
 
-### Visual Hierarchy
-- **Minimalistic design** with consistent spacing and typography
-- **Color-coded sections** for different user types and actions
-- **Progressive disclosure** in signup flows and dashboards
-- **Responsive design** optimized for mobile and desktop
+### Availability Management
+- **Business hours** enforcement (9 AM–10 PM local time)
+- **Buffer time** between sessions (15 minutes)
+- **Timezone handling** for global professionals
+- **Conflict detection** and resolution
 
-## 🧪 Testing
-
-```bash
-# Run linting
-npm run lint
-
-# Build production
-npm run build
-
-# Start production server
-npm run start
-```
-
-## 📊 Production Deployment
+## 📈 Production Deployment
 
 ### Vercel Frontend Deployment
 1. **Connect GitHub repository** to Vercel
-2. **Configure environment variables** in Vercel dashboard:
-   ```
-   MONGODB_URI=mongodb+srv://...
-   STRIPE_SECRET_KEY=sk_live_...
-   AWS_ACCESS_KEY_ID=AKIA...
-   AWS_SECRET_ACCESS_KEY=...
-   AWS_S3_BUCKET_NAME=monet-file-uploads-prod
-   NEXTAUTH_URL=https://your-domain.com
-   ```
-3. **Deploy automatically** on git push
+2. **Configure environment variables** in Vercel dashboard
+3. **Deploy automatically** on git push to main branch
 
-### AWS S3 Production Setup
-1. **Create production bucket:** `monet-file-uploads-prod`
-2. **Update CORS policy** to allow your production domain:
-   ```json
-   [
-     {
-       "AllowedHeaders": ["*"],
-       "AllowedMethods": ["GET", "PUT", "POST"],
-       "AllowedOrigins": ["https://your-domain.com"],
-       "ExposeHeaders": []
-     }
-   ]
-   ```
-3. **Create dedicated IAM user** with minimal S3 permissions
-4. **Optional: Set up CloudFront CDN** for faster file delivery
+### AWS Infrastructure (SST)
+1. **Deploy infrastructure**: `npm run sst:deploy`
+2. **Configure domain**: Update DNS to point to CloudFront
+3. **SSL certificates**: Automatically provisioned via ACM
 
-### Database Production
-- **MongoDB Atlas** automatically scales
-- **Connection pooling** configured in `src/lib/db.ts`
-- **Indexes** optimized for common queries
+### Production Environment Variables
+```bash
+# Production MongoDB
+MONGODB_URI=mongodb+srv://prod-user:password@cluster.mongodb.net/monet-prod
+
+# Production Stripe
+STRIPE_PUBLISHABLE_KEY=pk_live_...
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Production AWS
+AWS_S3_BUCKET_NAME=monet-file-uploads-prod
+AWS_SES_FROM_EMAIL=notifications@yourdomain.com
+
+# Production URLs
+NEXTAUTH_URL=https://yourdomain.com
+ZOOM_WEBHOOK_URL=https://yourdomain.com/api/webhooks/zoom
+```
 
 ### Security Checklist
 - ✅ **Presigned URLs** expire in 5 minutes
@@ -410,7 +428,23 @@ npm run start
 - ✅ **Rate limiting** on API endpoints
 - ✅ **Input sanitization** with Mongoose schemas
 - ✅ **Environment variables** secured in Vercel
-- ✅ **Webhook signature verification** for Stripe
+- ✅ **Webhook signature verification** for Stripe & Zoom
+- ✅ **OAuth-only authentication** (no password storage)
+- ✅ **HTTPS enforced** in production
+
+## 🔍 Monitoring & Error Tracking
+
+### Recommended Services (Sentry Alternatives)
+- **Axiom**: Modern observability platform with excellent Next.js integration
+- **LogRocket**: Session replay with performance monitoring
+- **Highlight**: Open-source alternative with self-hosting option
+
+### Key Metrics to Track
+- **Session booking conversion** rates
+- **Payment processing** success rates
+- **Professional response** times
+- **Platform fee** calculations
+- **API response** times and errors
 
 ## 🔒 Security Considerations
 
@@ -419,47 +453,82 @@ npm run start
 - **Authentication**: OAuth-only, no password storage
 - **File Security**: S3 presigned URLs with expiration
 - **API Security**: Input validation with Zod schemas
-- **Webhook Security**: Stripe signature verification
+- **Webhook Security**: Signature verification for all webhooks
+- **Calendar Security**: Limited OAuth scopes for calendar access
 
 ## 📈 Scaling Considerations
 
 - **Serverless Architecture**: Auto-scales with Vercel Functions
 - **Database**: MongoDB Atlas with automatic scaling
 - **File Storage**: AWS S3 with unlimited capacity
-- **CDN**: Vercel Edge Network + optional CloudFront
-- **Monitoring**: Sentry alerts for error rates and performance
+- **CDN**: CloudFront for global file delivery
+- **Email**: AWS SES with high delivery rates
+- **Video**: Zoom SDK handles meeting infrastructure
 
 ## 🆘 Troubleshooting
-
-### Common AWS S3 Issues
-
-**Problem**: "Access Denied" when uploading files
-**Solution**: Check your IAM user permissions and bucket policy
-
-**Problem**: CORS errors in browser console
-**Solution**: Verify CORS policy includes your domain (localhost:3000 for dev)
-
-**Problem**: Files upload but can't be viewed
-**Solution**: Ensure bucket policy allows public read access
 
 ### Common Development Issues
 
 **Problem**: Environment variables not loading
-**Solution**: Restart your development server after changing `.env.local`
+**Solution**: Restart development server after changing `.env.local`
 
 **Problem**: Database connection errors
 **Solution**: Check MongoDB Atlas connection string and IP whitelist
 
+**Problem**: S3 upload failures
+**Solution**: Verify IAM permissions and bucket CORS policy
+
 **Problem**: Stripe webhooks failing
-**Solution**: Verify webhook secret and endpoint URL in Stripe dashboard
+**Solution**: Check webhook secret and endpoint URL in Stripe dashboard
+
+**Problem**: Calendar integration errors
+**Solution**: Verify Google OAuth scopes and refresh tokens
+
+**Problem**: Zoom meeting creation fails
+**Solution**: Check Zoom SDK credentials and API limits
+
+### Development Commands
+
+```bash
+# Development
+npm run dev              # Start development server with debugging
+npm run build           # Build for production
+npm run start           # Start production server
+npm run lint            # Run ESLint
+npm run setup-mock      # Load development data
+
+# Testing
+npm run test            # Run unit tests
+npm run test:e2e        # Run E2E tests
+npm run test:coverage   # Generate coverage report
+
+# Infrastructure
+npm run sst:dev         # Deploy to development environment
+npm run sst:deploy      # Deploy to production
+npm run sst:remove      # Remove infrastructure
+
+# Database
+npm run db:migrate      # Run database migrations
+npm run db:seed         # Seed database with sample data
+```
 
 ## 🤝 Contributing
 
+### Development Workflow
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature-name`
-3. Commit changes: `git commit -am 'Add feature'`
-4. Push to branch: `git push origin feature-name`
-5. Submit a Pull Request
+3. Load mock data: `npm run setup-mock`
+4. Make changes with tests: `npm run test:watch`
+5. Run full test suite: `npm test && npm run test:e2e`
+6. Commit with conventional commits: `git commit -am 'feat: add feature'`
+7. Push and create Pull Request
+
+### Code Quality Standards
+- **ESLint + Prettier** enforced via Husky pre-commit hooks
+- **TypeScript strict mode** with no `any` types
+- **Test coverage** ≥95% for critical payment flows
+- **Lighthouse score** ≥90 for mobile and desktop
+- **Conventional Commits** for automated changelog generation
 
 ## 📄 License
 
@@ -471,26 +540,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [MongoDB Atlas Setup](https://docs.atlas.mongodb.com/)
 - [Stripe Connect Guide](https://stripe.com/docs/connect)
 - [AWS S3 Developer Guide](https://docs.aws.amazon.com/s3/)
+- [AWS SES Documentation](https://docs.aws.amazon.com/ses/)
+- [Zoom SDK Documentation](https://developers.zoom.us/)
 - [NextAuth.js Documentation](https://next-auth.js.org/)
+- [SST Documentation](https://docs.sst.dev/)
 
 ---
 
 **Built with ❤️ for the future of professional networking**
-
-## 📋 Quick Reference Commands
-
-```bash
-# Development
-npm run dev              # Start development server
-npm run build           # Build for production
-npm run start           # Start production server
-npm run lint            # Run ESLint
-
-# AWS S3 Commands
-aws s3 ls               # List your S3 buckets
-aws s3 cp file.pdf s3://your-bucket/  # Upload file to S3
-aws s3 sync ./uploads s3://your-bucket/uploads/  # Sync folder
-
-# Database
-mongosh "mongodb+srv://..."  # Connect to MongoDB Atlas
-```
