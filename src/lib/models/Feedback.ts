@@ -27,7 +27,7 @@ const ProfessionalFeedbackSchema = new Schema<IProfessionalFeedback>({
     type: String,
     ref: 'Session',
     required: true,
-    unique: true // One feedback per session
+    unique: true // One feedback per session - this creates the index automatically
   },
   professionalId: {
     type: String,
@@ -79,8 +79,7 @@ const ProfessionalFeedbackSchema = new Schema<IProfessionalFeedback>({
   timestamps: true
 });
 
-// Indexes
-ProfessionalFeedbackSchema.index({ sessionId: 1 }, { unique: true });
+// Additional indexes (not duplicating the unique sessionId index)
 ProfessionalFeedbackSchema.index({ professionalId: 1, createdAt: -1 });
 ProfessionalFeedbackSchema.index({ candidateId: 1, createdAt: -1 });
 
@@ -106,7 +105,7 @@ const CandidateRatingSchema = new Schema<ICandidateRating>({
     type: String,
     ref: 'Session',
     required: true,
-    unique: true // One rating per session
+    unique: true // One rating per session - this creates the index automatically
   },
   candidateId: {
     type: String,
@@ -135,8 +134,7 @@ const CandidateRatingSchema = new Schema<ICandidateRating>({
   timestamps: true
 });
 
-// Indexes
-CandidateRatingSchema.index({ sessionId: 1 }, { unique: true });
+// Additional indexes (not duplicating the unique sessionId index)
 CandidateRatingSchema.index({ professionalId: 1, rating: 1 });
 CandidateRatingSchema.index({ candidateId: 1, createdAt: -1 });
 
