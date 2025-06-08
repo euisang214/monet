@@ -99,11 +99,21 @@ UserSchema.index(
 );
 UserSchema.index(
   { schoolEmail: 1 },
-  { unique: true, background: true, collation: { locale: 'en', strength: 2 } }
+  {
+    unique: true,
+    sparse: true,
+    background: true,
+    collation: { locale: 'en', strength: 2 }
+  }
 );
 UserSchema.index(
   { workEmail: 1 },
-  { unique: true, background: true, collation: { locale: 'en', strength: 2 } }
+  {
+    unique: true,
+    sparse: true,
+    background: true,
+    collation: { locale: 'en', strength: 2 }
+  }
 );
 UserSchema.index({ company: 1, role: 1 });
 
