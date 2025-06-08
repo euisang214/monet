@@ -7,6 +7,7 @@ import { formatDate, formatTime, getAvatarGradient, apiRequest } from '@/lib/uti
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Modal from '@/components/ui/Modal';
 import Navigation from '@/components/ui/Navigation';
+import StripeCheckout from '@/components/ui/StripeCheckout';
 
 interface Professional {
   _id: string;
@@ -74,6 +75,74 @@ export default function EnhancedCandidateDashboard() {
   useEffect(() => {
     filterProfessionals();
   }, [professionals, searchQuery, filters]);
+
+  // Add these state variables after the existing useState declarations (around line 45)
+  const [selectedDateTime, setSelectedDateTime] = useState<Date | null>(null);
+  const [bookingStep, setBookingStep] = useState<'datetime' | 'checkout'>('datetime');
+
+  // Add these helper functions before the return statement (around line 180)
+  const generateAvailableSlots = () => {
+    const slots = [];
+    const now = new Date();
+    const startDate = new Date(now.getTime() + 24 * 60 * 60 * 1000); // Start tomorrow
+    
+    // Generate next 7 days of slots
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
+      
+      // Skip weekends for business hours
+      if (date.getDay() === 0 || date.getDay() === 6) continue;
+      
+      // Morning slot (10 AM)
+      const morningSlot = new Date(date);
+      morningSlot.setHours(10, 0, 0, 0);
+      slots.push({
+        date: morningSlot,
+        dayLabel: date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+        timeLabel: '10:00 AM'
+      });
+      
+      // Afternoon slot (2 PM)
+      const afternoonSlot = new Date(date);
+      afternoonSlot.setHours(14, 0, 0, 0);
+      slots.push({
+        date: afternoonSlot,
+        dayLabel: date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+        timeLabel: '2:00 PM'
+      });
+      
+      // Only show first 6 slots to keep UI clean
+      if (slots.length >= 6) break;
+    }
+    
+    return slots;
+  };
+
+  const generateTimeOptions = () => {
+    const options = [];
+    
+    // Business hours: 9 AM to 9 PM
+    for (let hour = 9; hour <= 21; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const time24 = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        
+        const date = new Date();
+        date.setHours(hour, minute, 0, 0);
+        const time12 = date.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        });
+        
+        options.push({
+          value: time24,
+          label: time12
+        });
+      }
+    }
+    
+    return options;
+  };
 
   const fetchDashboardData = async () => {
     if (!session?.user?.id) return;
@@ -453,72 +522,176 @@ export default function EnhancedCandidateDashboard() {
         {/* Booking Modal */}
         <Modal
           isOpen={showBookingModal}
-          onClose={() => setShowBookingModal(false)}
-          title={selectedPro ? `Request Chat with ${selectedPro.name}` : ''}
+          onClose={() => {
+            setShowBookingModal(false);
+            setSelectedDateTime(null);
+            setBookingStep('datetime');
+          }}
+          title={selectedPro ? `Book Session with ${selectedPro.name}` : ''}
           subtitle={selectedPro ? `${selectedPro.title} at ${selectedPro.company}` : ''}
-          maxWidth="2xl"
-          actions={
-            <>
-              <button
-                onClick={() => setShowBookingModal(false)}
-                className="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  alert('Booking system integration coming soon!');
-                  setShowBookingModal(false);
-                }}
-                className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold transition-colors"
-              >
-                Proceed to Payment
-              </button>
-            </>
-          }
+          maxWidth="3xl"
         >
           {selectedPro && (
             <div className="space-y-6">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-indigo-600 mb-2">
-                  ${(selectedPro.sessionRateCents / 100).toFixed(0)}
-                </div>
-                <div className="text-gray-600">30-minute video session</div>
-              </div>
+              {bookingStep === 'datetime' && (
+                <div className="space-y-6">
+                  {/* Professional Info */}
+                  <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+                    <div className={`w-12 h-12 ${getAvatarGradient(1)} rounded-full flex items-center justify-center text-white font-bold`}>
+                      {selectedPro.name.charAt(0)}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-semibold text-gray-900">{selectedPro.name}</h4>
+                      <p className="text-gray-600">{selectedPro.title} at {selectedPro.company}</p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <div className="flex">
+                          {renderStars(selectedPro.averageRating || 0)}
+                        </div>
+                        <span className="text-sm text-gray-500">
+                          {selectedPro.totalSessions} sessions
+                        </span>
+                        <span className="text-sm text-gray-400">•</span>
+                        <span className="text-lg font-bold text-indigo-600">
+                          ${(selectedPro.sessionRateCents / 100).toFixed(0)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                <div className="flex items-start space-x-3">
-                  <div className="text-amber-600 mt-0.5">⚠️</div>
+                  {/* Date & Time Selection */}
                   <div>
-                    <h4 className="font-semibold text-amber-800 mb-1">Development Notice</h4>
-                    <p className="text-sm text-amber-700">
-                      Booking system integration is in development. This will integrate with Stripe Checkout and calendar scheduling.
-                    </p>
+                    <h4 className="text-lg font-bold text-gray-900 mb-4">Select Date & Time</h4>
+                    
+                    {/* Quick Time Slots */}
+                    <div className="mb-6">
+                      <p className="text-sm text-gray-600 mb-3">Available this week:</p>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {generateAvailableSlots().map((slot, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setSelectedDateTime(slot.date)}
+                            className={`p-3 text-left border-2 rounded-lg transition-all duration-200 ${
+                              selectedDateTime?.getTime() === slot.date.getTime()
+                                ? 'border-indigo-600 bg-indigo-50'
+                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            <div className="font-medium text-gray-900">{slot.dayLabel}</div>
+                            <div className="text-sm text-gray-600">{slot.timeLabel}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Custom Date/Time Input */}
+                    <div className="border-t border-gray-200 pt-4">
+                      <p className="text-sm text-gray-600 mb-3">Or choose a specific time:</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                          <input
+                            type="date"
+                            min={new Date().toISOString().split('T')[0]}
+                            max={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                const date = new Date(e.target.value + 'T10:00:00');
+                                setSelectedDateTime(date);
+                              }
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Time</label>
+                          <select
+                            onChange={(e) => {
+                              if (selectedDateTime && e.target.value) {
+                                const [hours, minutes] = e.target.value.split(':').map(Number);
+                                const newDate = new Date(selectedDateTime);
+                                newDate.setHours(hours, minutes, 0, 0);
+                                setSelectedDateTime(newDate);
+                              }
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          >
+                            <option value="">Select time</option>
+                            {generateTimeOptions().map(time => (
+                              <option key={time.value} value={time.value}>{time.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {selectedDateTime && (
+                      <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-start space-x-3">
+                          <div className="text-green-500 mt-0.5">✓</div>
+                          <div>
+                            <h5 className="font-semibold text-green-900">Selected Time</h5>
+                            <p className="text-green-800">
+                              {selectedDateTime.toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })} at {selectedDateTime.toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+                    <button
+                      onClick={() => {
+                        setShowBookingModal(false);
+                        setSelectedDateTime(null);
+                      }}
+                      className="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => setBookingStep('checkout')}
+                      disabled={!selectedDateTime}
+                      className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold transition-colors"
+                    >
+                      Continue to Payment
+                    </button>
                   </div>
                 </div>
-              </div>
+              )}
 
-              <div className="bg-indigo-50 rounded-lg p-4">
-                <h4 className="font-semibold text-indigo-900 mb-3">What you'll get:</h4>
-                <ul className="text-sm text-indigo-800 space-y-2">
-                  <li className="flex items-center space-x-2">
-                    <span className="text-green-500">✓</span>
-                    <span>30-minute video call</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <span className="text-green-500">✓</span>
-                    <span>Professional feedback</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <span className="text-green-500">✓</span>
-                    <span>Career advice and insights</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <span className="text-green-500">✓</span>
-                    <span>Opportunity for referrals</span>
-                  </li>
-                </ul>
-              </div>
+              {bookingStep === 'checkout' && selectedDateTime && (
+                <StripeCheckout
+                  professional={selectedPro}
+                  selectedDateTime={selectedDateTime}
+                  onSuccess={(sessionData) => {
+                    setShowBookingModal(false);
+                    setSelectedDateTime(null);
+                    setBookingStep('datetime');
+                    
+                    // Show success message
+                    alert(`Session booked successfully! You'll receive a calendar invite and Zoom link for your meeting with ${sessionData.professional.name}.`);
+                    
+                    // Refresh dashboard data
+                    fetchDashboardData();
+                  }}
+                  onCancel={() => setBookingStep('datetime')}
+                  onError={(error) => {
+                    alert(`Booking failed: ${error}`);
+                    setBookingStep('datetime');
+                  }}
+                />
+              )}
             </div>
           )}
         </Modal>
