@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { withAuthAndDB, errorResponse, successResponse, validateRequestBody } from '@/lib/api/error-handler';
 import Session from '@/lib/models/Session';
 import User from '@/lib/models/User';
+import { createZoomMeeting, deleteZoomMeeting } from '@/lib/zoom';
+import { createCalendarEvent, deleteCalendarEvent } from '@/lib/calendar';
 
 interface ConfirmSessionRequest {
   professionalId: string;
@@ -37,10 +39,10 @@ export const POST = withAuthAndDB(async (request: NextRequest, { params }: { par
     return errorResponse('Unauthorized - not your session', 403);
   }
 
-  // Fetch session
+  // Fetch session with populated user data
   const sessionRecord = await Session.findById(sessionId)
     .populate('candidate', 'name email')
-    .populate('professional', 'name email');
+    .populate('professional', 'name email company googleCalendarToken');
 
   if (!sessionRecord) {
     return errorResponse('Session not found', 404);
@@ -61,30 +63,108 @@ export const POST = withAuthAndDB(async (request: NextRequest, { params }: { par
       return errorResponse('Please complete Stripe onboarding before accepting sessions', 400);
     }
 
-    // Update session status to confirmed
-    sessionRecord.status = 'confirmed';
-    
-    // TODO: Create Zoom meeting
-    // sessionRecord.zoomJoinUrl = await createZoomMeeting(sessionRecord);
-    // sessionRecord.zoomMeetingId = 'zoom-meeting-id';
-    
-    // TODO: Create Google Calendar events
-    // sessionRecord.googleCalendarEventId = await createCalendarEvent(sessionRecord);
-
-    await sessionRecord.save();
-
-    // TODO: Send confirmation emails
-    console.log(`Session ${sessionId} accepted by professional ${professionalId}`);
-
-    return successResponse({
-      message: 'Session confirmed successfully',
-      session: {
-        id: sessionRecord._id,
-        status: sessionRecord.status,
-        scheduledAt: sessionRecord.scheduledAt,
-        zoomJoinUrl: sessionRecord.zoomJoinUrl
+    try {
+      // Create Zoom meeting first
+      let zoomMeeting;
+      try {
+        zoomMeeting = await createZoomMeeting(
+          sessionRecord.professional.name,
+          sessionRecord.candidate.name,
+          sessionRecord.scheduledAt,
+          sessionRecord.durationMinutes
+        );
+        
+        console.log('Zoom meeting created successfully:', zoomMeeting.id);
+      } catch (zoomError) {
+        console.error('Failed to create Zoom meeting:', zoomError);
+        return errorResponse('Failed to create video meeting. Please try again.', 500);
       }
-    });
+
+      // Update session with Zoom details
+      sessionRecord.status = 'confirmed';
+      sessionRecord.zoomJoinUrl = zoomMeeting.join_url;
+      sessionRecord.zoomMeetingId = zoomMeeting.id;
+
+      // Create Google Calendar events for both users
+      let calendarEventId;
+      try {
+        // Create calendar event for the professional (session creator)
+        if (sessionRecord.professional.googleCalendarToken) {
+          const calendarEvent = await createCalendarEvent(
+            sessionRecord.professional.googleCalendarToken,
+            sessionRecord.professional.email,
+            sessionRecord.professional.name,
+            sessionRecord.professional.company || 'Professional Services',
+            sessionRecord.candidate.email,
+            sessionRecord.candidate.name,
+            sessionRecord.scheduledAt,
+            sessionRecord.durationMinutes,
+            zoomMeeting.join_url,
+            zoomMeeting.id
+          );
+          
+          calendarEventId = calendarEvent.id;
+          console.log('Google Calendar event created:', calendarEventId);
+        } else {
+          console.warn('Professional does not have Google Calendar token - skipping calendar creation');
+        }
+      } catch (calendarError) {
+        console.error('Failed to create calendar event:', calendarError);
+        
+        // If calendar creation fails, we should still proceed with the session
+        // but log the error for manual follow-up
+        console.warn('Session confirmed but calendar event creation failed - manual calendar invite may be needed');
+        
+        // Don't fail the entire request for calendar issues
+        if (calendarError instanceof Error && calendarError.message === 'CALENDAR_TOKEN_EXPIRED') {
+          console.log('Google Calendar token expired for professional - they will need to reconnect');
+        }
+      }
+
+      // Save session with meeting details
+      if (calendarEventId) {
+        sessionRecord.googleCalendarEventId = calendarEventId;
+      }
+      
+      await sessionRecord.save();
+
+      console.log(`Session ${sessionId} confirmed successfully by professional ${professionalId}`);
+      
+      // TODO: Send confirmation emails to both parties
+      // await sendSessionConfirmationEmail(sessionRecord);
+
+      return successResponse({
+        message: 'Session confirmed successfully',
+        session: {
+          id: sessionRecord._id,
+          status: sessionRecord.status,
+          scheduledAt: sessionRecord.scheduledAt,
+          zoomJoinUrl: sessionRecord.zoomJoinUrl,
+          zoomMeetingId: sessionRecord.zoomMeetingId,
+          googleCalendarEventId: sessionRecord.googleCalendarEventId
+        },
+        zoomMeeting: {
+          id: zoomMeeting.id,
+          joinUrl: zoomMeeting.join_url,
+          startUrl: zoomMeeting.start_url
+        }
+      });
+
+    } catch (error) {
+      console.error('Error confirming session:', error);
+      
+      // Cleanup: If we created a Zoom meeting but something else failed, clean it up
+      if (sessionRecord.zoomMeetingId) {
+        try {
+          await deleteZoomMeeting(sessionRecord.zoomMeetingId);
+          console.log('Cleaned up Zoom meeting after error');
+        } catch (cleanupError) {
+          console.error('Failed to cleanup Zoom meeting:', cleanupError);
+        }
+      }
+      
+      return errorResponse('Failed to confirm session. Please try again.', 500);
+    }
 
   } else if (action === 'decline') {
     // Update session status to cancelled
@@ -100,8 +180,10 @@ export const POST = withAuthAndDB(async (request: NextRequest, { params }: { par
     //   });
     // }
 
-    // TODO: Send decline notification with alternative slots
     console.log(`Session ${sessionId} declined by professional ${professionalId}`);
+    
+    // TODO: Send decline notification with alternative slots
+    // await sendSessionDeclineEmail(sessionRecord, alternativeSlots);
 
     return successResponse({
       message: 'Session declined',
