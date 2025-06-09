@@ -189,7 +189,7 @@ export async function loadEnhancedMockData() {
 
   console.log(`✅ Created ${candidates.length} candidates and ${professionals.length} professionals`);
 
-  // Create Sessions with various statuses (expanded from 5 to 25)
+  // Create Sessions with various statuses - FIXED INDICES
   const sessions = await Session.insertMany([
     // Upcoming confirmed sessions
     {
@@ -209,11 +209,11 @@ export async function loadEnhancedMockData() {
     },
     {
       candidateId: candidates[2]._id,
-      professionalId: professionals[6]._id,
-      firmId: 'Morgan Stanley',
+      professionalId: professionals[1]._id,
+      firmId: 'McKinsey & Company',
       scheduledAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
       durationMinutes: 30,
-      rateCents: 30000,
+      rateCents: 20000,
       status: 'confirmed',
       isFirstChatAtFirm: true,
       zoomJoinUrl: 'https://zoom.us/j/mock789012',
@@ -222,12 +222,12 @@ export async function loadEnhancedMockData() {
       paidAt: new Date(),
     },
     {
-      candidateId: candidates[4]._id,
-      professionalId: professionals[1]._id,
-      firmId: 'McKinsey & Company',
+      candidateId: candidates[1]._id,
+      professionalId: professionals[2]._id,
+      firmId: 'KKR',
       scheduledAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days from now
       durationMinutes: 45,
-      rateCents: 30000, // 45 min session
+      rateCents: 37500, // 45 min session (25000 * 1.5)
       status: 'confirmed',
       isFirstChatAtFirm: true,
       zoomJoinUrl: 'https://zoom.us/j/mock345678',
@@ -250,19 +250,19 @@ export async function loadEnhancedMockData() {
       stripePaymentIntentId: 'pi_mock_pending_1',
     },
     {
-      candidateId: candidates[3]._id,
-      professionalId: professionals[7]._id,
-      firmId: 'Citadel',
+      candidateId: candidates[0]._id,
+      professionalId: professionals[3]._id,
+      firmId: 'Bain & Company',
       scheduledAt: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), // 6 days from now
       durationMinutes: 30,
-      rateCents: 27500,
+      rateCents: 18000,
       status: 'requested',
-      requestMessage: 'Hi Lisa, I\'m interested in quantitative trading and would love to learn about your path to Citadel.',
+      requestMessage: 'Hi Emily, I\'m interested in retail consulting and would love to learn about your path to Bain.',
       isFirstChatAtFirm: true,
       stripePaymentIntentId: 'pi_mock_pending_2',
     },
     {
-      candidateId: candidates[5]._id,
+      candidateId: candidates[2]._id,
       professionalId: professionals[2]._id,
       firmId: 'KKR',
       scheduledAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
@@ -270,7 +270,7 @@ export async function loadEnhancedMockData() {
       rateCents: 25000,
       status: 'requested',
       requestMessage: 'Hi David, I\'m interested in private equity and would appreciate insights into the KKR recruitment process.',
-      isFirstChatAtFirm: true,
+      isFirstChatAtFirm: false, // Sarah already had a session at KKR
       stripePaymentIntentId: 'pi_mock_pending_3',
     },
 
@@ -289,7 +289,7 @@ export async function loadEnhancedMockData() {
       paidAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
     },
     {
-      candidateId: candidates[6]._id,
+      candidateId: candidates[1]._id,
       professionalId: professionals[3]._id,
       firmId: 'Bain & Company',
       scheduledAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
@@ -319,18 +319,18 @@ export async function loadEnhancedMockData() {
       paidAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
     },
     {
-      candidateId: candidates[4]._id,
-      professionalId: professionals[5]._id,
-      firmId: 'Boston Consulting Group',
+      candidateId: candidates[1]._id,
+      professionalId: professionals[1]._id,
+      firmId: 'McKinsey & Company',
       scheduledAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
       durationMinutes: 30,
-      rateCents: 22000,
+      rateCents: 20000,
       status: 'completed',
-      isFirstChatAtFirm: true,
+      isFirstChatAtFirm: false, // John already had a pending at McKinsey
       completedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
       feedbackSubmittedAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000),
       stripePaymentIntentId: 'pi_mock_completed_with_feedback_2',
-      stripeTransferIds: ['tr_mock_bcg_payout_1'],
+      stripeTransferIds: ['tr_mock_mckinsey_payout_1'],
       paidAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000),
     },
 
@@ -351,116 +351,58 @@ export async function loadEnhancedMockData() {
       stripeTransferIds: ['tr_mock_kkr_main_1', 'tr_mock_referral_bonus_1'],
       paidAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
     },
-    {
-      candidateId: candidates[3]._id,
-      professionalId: professionals[8]._id, // Apollo VP
-      firmId: 'Apollo Global Management',
-      referrerProId: professionals[2]._id, // Referred by KKR Principal
-      scheduledAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      durationMinutes: 30,
-      rateCents: 19000,
-      status: 'completed',
-      isFirstChatAtFirm: true,
-      completedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      feedbackSubmittedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-      stripePaymentIntentId: 'pi_mock_referral_session_2',
-      stripeTransferIds: ['tr_mock_apollo_main_1', 'tr_mock_referral_bonus_2', 'tr_mock_referral_bonus_2_level2'],
-      paidAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-    },
 
     // Additional completed sessions for variety
     {
-      candidateId: candidates[7]._id,
-      professionalId: professionals[9]._id,
-      firmId: 'Deloitte',
+      candidateId: candidates[0]._id,
+      professionalId: professionals[1]._id,
+      firmId: 'McKinsey & Company',
       scheduledAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
       durationMinutes: 30,
-      rateCents: 14000,
+      rateCents: 20000,
       status: 'completed',
       isFirstChatAtFirm: true,
       completedAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
       feedbackSubmittedAt: new Date(Date.now() - 11 * 24 * 60 * 60 * 1000),
       stripePaymentIntentId: 'pi_mock_completed_3',
-      stripeTransferIds: ['tr_mock_deloitte_payout_1'],
+      stripeTransferIds: ['tr_mock_mckinsey_payout_2'],
       paidAt: new Date(Date.now() - 11 * 24 * 60 * 60 * 1000),
-    },
-    {
-      candidateId: candidates[8]._id,
-      professionalId: professionals[10]._id,
-      firmId: 'BlackRock',
-      scheduledAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
-      durationMinutes: 30,
-      rateCents: 21000,
-      status: 'completed',
-      isFirstChatAtFirm: true,
-      completedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
-      feedbackSubmittedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-      stripePaymentIntentId: 'pi_mock_completed_4',
-      stripeTransferIds: ['tr_mock_blackrock_payout_1'],
-      paidAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
     },
 
     // Cancelled sessions
     {
-      candidateId: candidates[9]._id,
-      professionalId: professionals[11]._id,
-      firmId: 'PricewaterhouseCoopers',
+      candidateId: candidates[2]._id,
+      professionalId: professionals[4]._id,
+      firmId: 'J.P. Morgan',
       scheduledAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
       durationMinutes: 30,
-      rateCents: 20500,
+      rateCents: 8000,
       status: 'cancelled',
       cancelReason: 'Professional had scheduling conflict',
       stripePaymentIntentId: 'pi_mock_cancelled_1',
     },
 
-    // More pending requests
-    {
-      candidateId: candidates[10]._id,
-      professionalId: professionals[12]._id,
-      firmId: 'Bridgewater Associates',
-      scheduledAt: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000),
-      durationMinutes: 30,
-      rateCents: 16500,
-      status: 'requested',
-      requestMessage: 'Hi Andrew, I\'m interested in macro investing and would love to learn about Bridgewater\'s culture.',
-      isFirstChatAtFirm: true,
-      stripePaymentIntentId: 'pi_mock_pending_4',
-    },
-    {
-      candidateId: candidates[11]._id,
-      professionalId: professionals[13]._id,
-      firmId: 'KPMG',
-      referrerProId: professionals[3]._id, // Referred by Bain Principal
-      scheduledAt: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000),
-      durationMinutes: 30,
-      rateCents: 17000,
-      status: 'requested',
-      requestMessage: 'Hi Stephanie, Emily from Bain recommended I speak with you about M&A advisory work.',
-      isFirstChatAtFirm: true,
-      stripePaymentIntentId: 'pi_mock_pending_5',
-    },
-
     // Extended duration sessions
     {
-      candidateId: candidates[5]._id,
-      professionalId: professionals[14]._id,
-      firmId: 'Two Sigma',
+      candidateId: candidates[2]._id,
+      professionalId: professionals[0]._id,
+      firmId: 'Goldman Sachs',
       scheduledAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
       durationMinutes: 60, // 1-hour session
-      rateCents: 48000, // $240 * 2 for extended duration
+      rateCents: 30000, // $150 * 2 for extended duration
       status: 'completed',
-      isFirstChatAtFirm: true,
+      isFirstChatAtFirm: false, // Sarah already had Goldman session
       completedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
       feedbackSubmittedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
       stripePaymentIntentId: 'pi_mock_extended_1',
-      stripeTransferIds: ['tr_mock_twosigma_payout_1'],
+      stripeTransferIds: ['tr_mock_goldman_extended_1'],
       paidAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
     }
   ]);
 
   console.log(`✅ Created ${sessions.length} sessions`);
 
-  // Create Professional Feedback (expanded dataset)
+  // Create Professional Feedback (using correct session indices)
   const feedbacks = await ProfessionalFeedback.insertMany([
     {
       sessionId: sessions[8]._id, // KKR session with Sarah
@@ -473,13 +415,13 @@ export async function loadEnhancedMockData() {
       internalNotes: 'Strong candidate - should fast-track for summer internship interviews.'
     },
     {
-      sessionId: sessions[9]._id, // BCG session with Emma
-      professionalId: professionals[5]._id,
-      candidateId: candidates[4]._id,
+      sessionId: sessions[9]._id, // McKinsey session with John
+      professionalId: professionals[1]._id,
+      candidateId: candidates[1]._id,
       culturalFitRating: 5,
       interestRating: 4,
       technicalRating: 3,
-      feedback: 'Emma demonstrated strong problem-solving skills and great communication. She needs to work on structuring case responses but has excellent potential for consulting.',
+      feedback: 'John demonstrated strong problem-solving skills and great communication. He needs to work on structuring case responses but has excellent potential for consulting.',
       internalNotes: 'Recommend connecting with our campus recruiting team.'
     },
     {
@@ -492,47 +434,28 @@ export async function loadEnhancedMockData() {
       feedback: 'John has good energy and clear career goals. His finance background is solid, though he could strengthen his modeling skills. Recommended next steps: practice LBO models and brush up on industry trends.',
     },
     {
-      sessionId: sessions[11]._id, // Multi-level referral session
-      professionalId: professionals[8]._id,
-      candidateId: candidates[3]._id,
+      sessionId: sessions[11]._id, // Alice + McKinsey session
+      professionalId: professionals[1]._id,
+      candidateId: candidates[0]._id,
       culturalFitRating: 4,
       interestRating: 5,
       technicalRating: 5,
-      feedback: 'Michael has exceptional quantitative skills and deep understanding of financial markets. His MIT background shows in his analytical approach. Would be a great fit for our distressed investing team.',
+      feedback: 'Alice has exceptional analytical skills and deep understanding of financial markets. Her Harvard background shows in her structured approach. Would be a great fit for our financial services practice.',
       internalNotes: 'Top tier candidate - extend internship offer if possible.'
     },
     {
-      sessionId: sessions[12]._id, // Deloitte session
-      professionalId: professionals[9]._id,
-      candidateId: candidates[7]._id,
-      culturalFitRating: 4,
-      interestRating: 3,
-      technicalRating: 4,
-      feedback: 'James has solid technical skills and good understanding of operations. He could benefit from developing more strategic thinking but shows good potential for consulting.',
-    },
-    {
-      sessionId: sessions[13]._id, // BlackRock session
-      professionalId: professionals[10]._id,
-      candidateId: candidates[8]._id,
+      sessionId: sessions[13]._id, // Extended Goldman session
+      professionalId: professionals[0]._id,
+      candidateId: candidates[2]._id,
       culturalFitRating: 5,
       interestRating: 5,
       technicalRating: 4,
-      feedback: 'Olivia has excellent product instincts and strong technical background. Her experience with data science would translate well to quantitative asset management. Highly recommend.',
-      internalNotes: 'Should interview for our Multi-Asset Strategies group.'
-    },
-    {
-      sessionId: sessions[17]._id, // Extended Two Sigma session
-      professionalId: professionals[14]._id,
-      candidateId: candidates[5]._id,
-      culturalFitRating: 5,
-      interestRating: 5,
-      technicalRating: 5,
-      feedback: 'David demonstrated exceptional mathematical ability and deep understanding of quantitative methods. His applied math background from Columbia is exactly what we look for. Strong communication skills and great cultural fit.',
-      internalNotes: 'Exceptional candidate - priority hire for our quant research team.'
+      feedback: 'Sarah demonstrated exceptional mathematical ability and strong technical skills. Her CS background from Stanford is exactly what we look for in our tech banking group. Strong communication skills and great cultural fit.',
+      internalNotes: 'Exceptional candidate - priority hire for our TMT group.'
     }
   ]);
 
-  // Create Candidate Ratings (expanded dataset)
+  // Create Candidate Ratings
   const ratings = await CandidateRating.insertMany([
     {
       sessionId: sessions[8]._id,
@@ -543,10 +466,10 @@ export async function loadEnhancedMockData() {
     },
     {
       sessionId: sessions[9]._id,
-      candidateId: candidates[4]._id,
-      professionalId: professionals[5]._id,
+      candidateId: candidates[1]._id,
+      professionalId: professionals[1]._id,
       rating: 5,
-      review: 'Rachel provided excellent guidance on case interview prep and BCG culture. Really appreciated her honest feedback.'
+      review: 'Jennifer provided excellent guidance on case interview prep and McKinsey culture. Really appreciated her honest feedback.'
     },
     {
       sessionId: sessions[10]._id,
@@ -557,35 +480,21 @@ export async function loadEnhancedMockData() {
     },
     {
       sessionId: sessions[11]._id,
-      candidateId: candidates[3]._id,
-      professionalId: professionals[8]._id,
+      candidateId: candidates[0]._id,
+      professionalId: professionals[1]._id,
       rating: 5,
-      review: 'Robert gave me invaluable insights into distressed investing. His background in restructuring was exactly what I needed to hear.'
-    },
-    {
-      sessionId: sessions[12]._id,
-      candidateId: candidates[7]._id,
-      professionalId: professionals[9]._id,
-      rating: 4,
-      review: 'Samantha was very knowledgeable about operations consulting. Helped me understand what to expect in Deloitte interviews.'
+      review: 'Jennifer gave me invaluable insights into financial services consulting. Her background was exactly what I needed to hear.'
     },
     {
       sessionId: sessions[13]._id,
-      candidateId: candidates[8]._id,
-      professionalId: professionals[10]._id,
+      candidateId: candidates[2]._id,
+      professionalId: professionals[0]._id,
       rating: 5,
-      review: 'Kevin provided amazing insights into asset management careers. His advice on transitioning from tech to finance was spot-on.'
-    },
-    {
-      sessionId: sessions[17]._id,
-      candidateId: candidates[5]._id,
-      professionalId: professionals[14]._id,
-      rating: 5,
-      review: 'Jason spent a full hour explaining quantitative research at Two Sigma. Incredibly detailed and helpful for my career planning.'
+      review: 'Michael spent a full hour explaining tech banking at Goldman. Incredibly detailed and helpful for my career planning.'
     }
   ]);
 
-  // Create Complex Referral Edges (multi-level chains)
+  // Create Referral Edges (multi-level chains)
   const referralEdges = await ReferralEdge.insertMany([
     // Simple referral (Level 1 only)
     {
@@ -595,46 +504,10 @@ export async function loadEnhancedMockData() {
       bonusCents: 2500, // 10% of $250 session
       stripeTransferId: 'tr_mock_referral_bonus_1',
       paidAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    },
-    
-    // Multi-level referral chain (Level 1 & 2)
-    {
-      sessionId: sessions[11]._id, // Apollo session
-      referrerProId: professionals[2]._id, // KKR Principal (Level 1 referrer)
-      level: 1,
-      bonusCents: 1900, // 10% of $190 session
-      stripeTransferId: 'tr_mock_referral_bonus_2',
-      paidAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-    },
-    {
-      sessionId: sessions[11]._id, // Apollo session
-      referrerProId: professionals[0]._id, // Goldman VP (Level 2 referrer, referred the KKR Principal)
-      level: 2,
-      bonusCents: 190, // 1% of $190 session
-      stripeTransferId: 'tr_mock_referral_bonus_2_level2',
-      paidAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-    },
-
-    // Referral pending payment (requested session)
-    {
-      sessionId: sessions[16]._id, // KPMG pending session
-      referrerProId: professionals[3]._id, // Bain Principal
-      level: 1,
-      bonusCents: 1700, // 10% of $170 session (pending until session completes)
-    },
-
-    // Additional referral for BCG session (professionals[5] referred by professionals[1])
-    {
-      sessionId: sessions[9]._id, // BCG session
-      referrerProId: professionals[1]._id, // McKinsey AP gets referral bonus
-      level: 1,
-      bonusCents: 2200, // 10% of $220 session
-      stripeTransferId: 'tr_mock_referral_bonus_3',
-      paidAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000),
     }
   ]);
 
-  // Create Sample Offers (expanded dataset)
+  // Create Sample Offers
   const offers = await Offer.insertMany([
     {
       candidateId: candidates[2]._id,
@@ -651,56 +524,28 @@ export async function loadEnhancedMockData() {
       confirmedBy: candidates[2]._id,
     },
     {
-      candidateId: candidates[4]._id,
-      firmId: 'Boston Consulting Group',
-      firstChatProId: professionals[5]._id,
+      candidateId: candidates[1]._id,
+      firmId: 'McKinsey & Company',
+      firstChatProId: professionals[1]._id,
       position: 'Summer Associate',
       salaryCents: 11000000, // $110k annualized
       status: 'accepted',
       acceptedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-      bonusCents: 35000, // Emma's offer bonus
+      bonusCents: 30000, // John's offer bonus
       bonusPaidAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
       stripeTransferId: 'tr_mock_offer_bonus_2',
-      reportedBy: professionals[5]._id, // Reported by professional
-      confirmedBy: candidates[4]._id,
+      reportedBy: professionals[1]._id, // Reported by professional
+      confirmedBy: candidates[1]._id,
     },
     {
-      candidateId: candidates[8]._id,
-      firmId: 'BlackRock',
-      firstChatProId: professionals[10]._id,
-      position: 'Investment Analyst Intern',
-      salaryCents: 9500000, // $95k annualized
-      status: 'pending',
-      bonusCents: 28000, // Olivia's offer bonus (pending acceptance)
-      reportedBy: professionals[10]._id,
-    },
-    {
-      candidateId: candidates[3]._id,
-      firmId: 'Apollo Global Management',
-      firstChatProId: professionals[8]._id,
+      candidateId: candidates[0]._id,
+      firmId: 'Goldman Sachs',
+      firstChatProId: professionals[0]._id,
       position: 'Investment Banking Summer Analyst',
       salaryCents: 13500000, // $135k annualized
-      status: 'accepted',
-      acceptedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      bonusCents: 40000, // Michael's offer bonus
-      bonusPaidAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      stripeTransferId: 'tr_mock_offer_bonus_3',
-      reportedBy: candidates[3]._id,
-      confirmedBy: candidates[3]._id,
-    },
-    {
-      candidateId: candidates[5]._id,
-      firmId: 'Two Sigma',
-      firstChatProId: professionals[14]._id,
-      position: 'Quantitative Research Intern',
-      salaryCents: 15000000, // $150k annualized
-      status: 'accepted',
-      acceptedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      bonusCents: 45000, // David's offer bonus
-      bonusPaidAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      stripeTransferId: 'tr_mock_offer_bonus_4',
-      reportedBy: professionals[14]._id,
-      confirmedBy: candidates[5]._id,
+      status: 'pending',
+      bonusCents: 50000, // Alice's offer bonus (pending acceptance)
+      reportedBy: professionals[0]._id,
     }
   ]);
 
@@ -717,15 +562,13 @@ export async function loadEnhancedMockData() {
   console.log(`   • ${referralEdges.length} referral payouts (including multi-level chains)`);
   console.log(`   • ${offers.length} job offers with bonus tracking`);
   console.log('\n🔗 Complex Referral Chains:');
-  console.log('   • Goldman VP → KKR Principal → Apollo VP (3-level chain)');
-  console.log('   • McKinsey AP → BCG Partner (2-level chain)');
-  console.log('   • Bain Principal → KPMG Director (2-level chain)');
+  console.log('   • Goldman VP → KKR Principal (2-level chain)');
   console.log('\n🎯 Test Scenarios Covered:');
   console.log('   • Upcoming confirmed sessions with Zoom links');
   console.log('   • Pending requests awaiting professional acceptance');
   console.log('   • Completed sessions needing feedback submission');
   console.log('   • Completed sessions with full feedback & payouts');
-  console.log('   • Multi-level referral bonus calculations');
+  console.log('   • Referral bonus calculations');
   console.log('   • Offer bonus tracking and payouts');
   console.log('   • Extended duration sessions (45min, 60min)');
   console.log('   • Cancelled sessions with refund scenarios');

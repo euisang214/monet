@@ -97,26 +97,35 @@ UserSchema.index(
   { email: 1 },
   { unique: true, background: true, collation: { locale: 'en', strength: 2 } }
 );
+
+// Fixed schoolEmail index to properly handle nulls/undefined
 UserSchema.index(
   { schoolEmail: 1 },
   {
     unique: true,
-    sparse: true,
+    sparse: true, // This ensures null/undefined values are not indexed
     background: true,
-    partialFilterExpression: { schoolEmail: { $exists: true, $ne: '' } },
+    partialFilterExpression: { 
+      schoolEmail: { $exists: true, $type: "string", $ne: "" } 
+    },
     collation: { locale: 'en', strength: 2 }
   }
 );
+
+// Fixed workEmail index to properly handle nulls/undefined  
 UserSchema.index(
   { workEmail: 1 },
   {
     unique: true,
-    sparse: true,
+    sparse: true, // This ensures null/undefined values are not indexed
     background: true,
-    partialFilterExpression: { workEmail: { $exists: true, $ne: '' } },
+    partialFilterExpression: { 
+      workEmail: { $exists: true, $type: "string", $ne: "" } 
+    },
     collation: { locale: 'en', strength: 2 }
   }
 );
+
 UserSchema.index({ company: 1, role: 1 });
 
 const User = mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
