@@ -1,7 +1,8 @@
 'use client';
 
 import Link from "next/link";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
+import { useState } from "react";
 
 interface NavigationProps {
   variant?: 'public' | 'candidate' | 'professional';
@@ -15,6 +16,13 @@ export default function Navigation({
   currentPage 
 }: NavigationProps) {
   const { data: session } = useSession();
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut({ 
+      callbackUrl: '/' 
+    });
+  };
 
   const renderPublicLinks = () => (
     <>
@@ -75,13 +83,81 @@ export default function Navigation({
             </Link>
           )}
 
-          <div className="flex items-center space-x-2">
-            <img 
-              src={session.user.image || undefined} 
-              alt={session.user.name || 'User'} 
-              className="w-8 h-8 rounded-full"
-            />
-            <span className="text-gray-600">{session.user.name}</span>
+          {/* User Menu Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 focus:outline-none"
+            >
+              <img 
+                src={session.user.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user.name || 'User')}&size=32&background=4f46e5&color=ffffff`} 
+                alt={session.user.name || 'User'} 
+                className="w-8 h-8 rounded-full"
+              />
+              <span className="hidden md:inline-block text-sm">{session.user.name}</span>
+              <svg 
+                className={`w-4 h-4 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {/* Dropdown Menu */}
+            {showUserMenu && (
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                <div className="px-4 py-2 border-b border-gray-100">
+                  <p className="text-sm font-semibold text-gray-900">{session.user.name}</p>
+                  <p className="text-xs text-gray-600">{session.user.email}</p>
+                  {session.user.role && (
+                    <p className="text-xs text-indigo-600 capitalize mt-1">{session.user.role}</p>
+                  )}
+                </div>
+                
+                <Link
+                  href="/profile/edit"
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  onClick={() => setShowUserMenu(false)}
+                >
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    <span>Edit Profile</span>
+                  </div>
+                </Link>
+
+                <Link
+                  href="/profile/switch-role"
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  onClick={() => setShowUserMenu(false)}
+                >
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                    <span>Switch Role</span>
+                  </div>
+                </Link>
+
+                <button
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    handleSignOut();
+                  }}
+                  className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    <span>Sign Out</span>
+                  </div>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       );
@@ -132,6 +208,14 @@ export default function Navigation({
           </div>
         </div>
       </div>
+      
+      {/* Backdrop to close menu when clicking outside */}
+      {showUserMenu && (
+        <div 
+          className="fixed inset-0 z-40"
+          onClick={() => setShowUserMenu(false)}
+        />
+      )}
     </nav>
   );
 }
