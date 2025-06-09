@@ -11,7 +11,7 @@ export const GET = withAuthAndDB(async (
   { params }: { params: { id: string } },
   session: any
 ) => {
-  const candidateId = params.id;
+  const { id: candidateId } = await params;
 
   if (!candidateId) {
     return errorResponse('Candidate ID is required', 400);
