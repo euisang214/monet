@@ -103,6 +103,7 @@ UserSchema.index(
     unique: true,
     sparse: true,
     background: true,
+    partialFilterExpression: { schoolEmail: { $exists: true, $ne: '' } },
     collation: { locale: 'en', strength: 2 }
   }
 );
@@ -112,6 +113,7 @@ UserSchema.index(
     unique: true,
     sparse: true,
     background: true,
+    partialFilterExpression: { workEmail: { $exists: true, $ne: '' } },
     collation: { locale: 'en', strength: 2 }
   }
 );
