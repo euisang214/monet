@@ -17,7 +17,7 @@ interface ConfirmSessionRequest {
  * Professional accepts or declines a session request
  */
 export const POST = withAuthAndDB(async (request: NextRequest, { params }: { params: { id: string } }, session: any) => {
-  const sessionId = params.id;
+  const { id: sessionId } = await params;
   
   // Validate request body
   const validation = await validateRequestBody<ConfirmSessionRequest>(request, [
@@ -199,7 +199,7 @@ export const POST = withAuthAndDB(async (request: NextRequest, { params }: { par
  * Get session details for confirmation
  */
 export const GET = withAuthAndDB(async (request: NextRequest, { params }: { params: { id: string } }, session: any) => {
-  const sessionId = params.id;
+  const { id: sessionId } = await params;
   const { searchParams } = new URL(request.url);
   const professionalId = searchParams.get('professionalId');
 

@@ -10,7 +10,7 @@ export const GET = withDB(async (
   request: NextRequest,
   { params }: { params: { id: string } }
 ) => {
-  const professionalId = params.id;
+  const { id: professionalId } = await params;
 
   if (!professionalId) {
     return errorResponse('Professional ID is required', 400);

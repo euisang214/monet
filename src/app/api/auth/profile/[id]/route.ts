@@ -14,7 +14,7 @@ export const GET = withAuth(async (
 ) => {
   await connectDB();
   
-  const userId = params.id;
+  const { id: userId } = await params;
 
   // Verify the user ID matches the session
   if (userId !== session.user.id) {
