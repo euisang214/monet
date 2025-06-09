@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useAuthGuard } from '@/hooks/useAuthGuard';
@@ -20,54 +20,52 @@ interface ProfessionalProfile {
   linkedinUrl: string;
 }
 
-const INDUSTRIES = [
+const PRESET_EXPERTISE = [
   'Investment Banking',
-  'Management Consulting', 
-  'Private Equity',
-  'Hedge Funds',
-  'Technology',
-  'Healthcare',
-  'Real Estate',
-  'Asset Management',
-  'Venture Capital',
-  'Corporate Finance',
-  'Strategy Consulting',
-  'Operations Consulting'
-];
-
-const EXPERTISE_OPTIONS = [
-  'Investment Banking',
-  'M&A',
-  'Financial Modeling',
-  'Management Consulting',
-  'Case Interviews',
-  'Strategy',
-  'Private Equity',
-  'LBO Modeling',
-  'Due Diligence',
-  'Hedge Funds',
-  'Quantitative Research',
-  'Trading',
-  'Technology',
+  'Consulting',
   'Software Engineering',
   'Product Management',
   'Data Science',
-  'Healthcare',
-  'Biotech',
-  'Real Estate',
-  'REIT Analysis',
-  'Interview Prep',
-  'Resume Review',
-  'Career Coaching',
-  'Leadership',
-  'Networking'
+  'Finance',
+  'Marketing',
+  'Sales',
+  'Operations',
+  'Strategy',
+  'Private Equity',
+  'Venture Capital',
+  'Hedge Funds',
+  'Trading',
+  'Risk Management',
+  'Compliance',
+  'Legal',
+  'HR',
+  'Recruiting'
+];
+
+const INDUSTRIES = [
+  'technology',
+  'finance',
+  'consulting', 
+  'healthcare',
+  'education',
+  'government',
+  'non-profit',
+  'energy',
+  'real-estate',
+  'retail',
+  'manufacturing',
+  'media',
+  'telecommunications',
+  'other'
 ];
 
 export default function ProfessionalProfilePage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>('');
   const [newExpertise, setNewExpertise] = useState('');
+  const [formKey, setFormKey] = useState(0); // Key to force form re-render if needed
   
   const [profile, setProfile] = useState<ProfessionalProfile>({
     title: '',
@@ -86,13 +84,8 @@ export default function ProfessionalProfilePage() {
     requireProfileComplete: false
   });
 
-  useEffect(() => {
-    if (isAuthenticated && session?.user?.id) {
-      fetchExistingProfile();
-    }
-  }, [isAuthenticated, session]);
-
-  const fetchExistingProfile = async () => {
+  // Stable function to fetch existing profile
+  const fetchExistingProfile = useCallback(async () => {
     if (!session?.user?.id) return;
 
     try {
@@ -100,29 +93,38 @@ export default function ProfessionalProfilePage() {
       if (result.success && result.data) {
         setProfile(prev => ({
           ...prev,
-          ...result.data
+          ...result.data,
+          expertise: result.data.expertise || []
         }));
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
+      // Don't show error for profile fetch, just log it
     }
-  };
+  }, [session?.user?.id]);
 
-  const updateProfile = (updates: Partial<ProfessionalProfile>) => {
+  useEffect(() => {
+    if (isAuthenticated && session?.user?.id && status === 'authenticated') {
+      fetchExistingProfile();
+    }
+  }, [isAuthenticated, session?.user?.id, status, fetchExistingProfile]);
+
+  const updateProfile = useCallback((updates: Partial<ProfessionalProfile>) => {
     setProfile(prev => ({ ...prev, ...updates }));
-  };
+    setError(''); // Clear any previous errors when user starts typing
+  }, []);
 
-  const addExpertise = (expertise: string) => {
-    if (expertise && !profile.expertise.includes(expertise)) {
-      updateProfile({ 
-        expertise: [...profile.expertise, expertise] 
+  const addExpertise = (expertiseItem: string) => {
+    if (!profile.expertise.includes(expertiseItem)) {
+      updateProfile({
+        expertise: [...profile.expertise, expertiseItem]
       });
     }
   };
 
-  const removeExpertise = (expertise: string) => {
-    updateProfile({ 
-      expertise: profile.expertise.filter(e => e !== expertise) 
+  const removeExpertise = (expertiseItem: string) => {
+    updateProfile({
+      expertise: profile.expertise.filter(item => item !== expertiseItem)
     });
   };
 
@@ -135,7 +137,7 @@ export default function ProfessionalProfilePage() {
 
   const validateWorkEmail = (email: string): boolean => {
     if (!email) return true; // Optional field
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailPattern = /^[^\s@]+@[^\s@]+$/;
     return emailPattern.test(email);
   };
 
@@ -146,73 +148,95 @@ export default function ProfessionalProfilePage() {
   };
 
   const handleSubmit = async () => {
+    // Clear any previous errors
+    setError('');
+
     // Validate required fields
     if (!profile.title || !profile.company || !profile.industry || !profile.bio) {
-      alert('Please fill in all required fields (Title, Company, Industry, Bio)');
+      setError('Please fill in all required fields (Title, Company, Industry, Bio)');
       return;
     }
 
     if (profile.bio.length < 50) {
-      alert('Please write a bio of at least 50 characters to help candidates understand your background');
+      setError('Please write a bio of at least 50 characters to help candidates understand your background');
       return;
     }
 
     if (profile.sessionRateCents < 1000) {
-      alert('Minimum session rate is $10');
+      setError('Minimum session rate is $10');
       return;
     }
 
     if (profile.expertise.length === 0) {
-      alert('Please select at least one area of expertise');
+      setError('Please select at least one area of expertise');
       return;
     }
 
     // Validate optional fields format
     if (profile.workEmail && !validateWorkEmail(profile.workEmail)) {
-      alert('Please enter a valid work email address');
+      setError('Please enter a valid work email address');
       return;
     }
 
     if (profile.linkedinUrl && !validateLinkedInUrl(profile.linkedinUrl)) {
-      alert('Please enter a valid LinkedIn URL (e.g., https://linkedin.com/in/yourname)');
+      setError('Please enter a valid LinkedIn URL (e.g., https://linkedin.com/in/yourname)');
+      return;
+    }
+
+    // Verify we have a valid session
+    if (!session?.user?.id) {
+      setError('Session expired. Please refresh the page and try again.');
       return;
     }
 
     setLoading(true);
     
     try {
+      console.log('Submitting professional profile:', { userId: session.user.id, ...profile });
+      
       const result = await apiRequest('/api/auth/complete-profile', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-          userId: session?.user?.id,
+          userId: session.user.id,
           role: 'professional',
           ...profile
         })
       });
       
+      console.log('Profile submission result:', result);
+      
       if (result.success) {
         // Check if Stripe onboarding URL was provided
         if (result.data?.stripeOnboardingUrl) {
+          console.log('Redirecting to Stripe onboarding:', result.data.stripeOnboardingUrl);
           // Redirect to Stripe onboarding first
           window.location.href = result.data.stripeOnboardingUrl;
         } else {
           // Redirect to professional dashboard
+          console.log('Profile completed successfully, redirecting to dashboard');
           router.push('/professional/dashboard');
         }
       } else {
-        alert(result.error || 'Failed to save profile. Please try again.');
+        // API returned an error - preserve form state and show error
+        const errorMessage = result.error || 'Failed to save profile. Please try again.';
+        console.error('Profile submission failed:', errorMessage);
+        setError(errorMessage);
       }
     } catch (error) {
       console.error('Profile completion error:', error);
-      alert('Failed to save profile. Please try again.');
+      // Network or other error - preserve form state and show error
+      setError('Failed to save profile. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const canSubmit = profile.title && profile.company && profile.industry && profile.bio && profile.expertise.length > 0;
+  const canSubmit = profile.title && profile.company && profile.industry && profile.bio && profile.expertise.length > 0 && !loading;
 
-  if (isLoading) {
+  if (isLoading || status === 'loading') {
     return <LoadingSpinner message="Loading your profile..." />;
   }
 
@@ -221,7 +245,7 @@ export default function ProfessionalProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" key={formKey}>
       {/* Navigation */}
       <nav className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -257,11 +281,23 @@ export default function ProfessionalProfilePage() {
           </div>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <div className="text-red-600 mr-3">⚠️</div>
+              <div className="text-sm text-red-800">{error}</div>
+            </div>
+          </div>
+        )}
+
         {/* Profile Form */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Complete Your Professional Profile</h1>
-            <p className="text-gray-600">Share your experience to help candidates and start earning</p>
+            <p className="text-gray-600">
+              Share your expertise and start earning from coffee chats
+            </p>
           </div>
 
           <div className="space-y-8">
@@ -271,33 +307,35 @@ export default function ProfessionalProfilePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Job Title *
+                    Job Title <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={profile.title}
                     onChange={(e) => updateProfile({ title: e.target.value })}
-                    placeholder="Vice President, Associate Partner, Principal..."
+                    placeholder="e.g., Senior Software Engineer"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     required
                   />
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Company *
+                    Company <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={profile.company}
                     onChange={(e) => updateProfile({ company: e.target.value })}
-                    placeholder="Goldman Sachs, McKinsey, KKR..."
+                    placeholder="e.g., Google"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     required
                   />
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Industry *
+                    Industry <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={profile.industry}
@@ -305,12 +343,15 @@ export default function ProfessionalProfilePage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     required
                   >
-                    <option value="">Select Industry</option>
+                    <option value="">Select industry</option>
                     {INDUSTRIES.map(industry => (
-                      <option key={industry} value={industry}>{industry}</option>
+                      <option key={industry} value={industry}>
+                        {industry.charAt(0).toUpperCase() + industry.slice(1).replace('-', ' ')}
+                      </option>
                     ))}
                   </select>
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Years of Experience
@@ -320,37 +361,32 @@ export default function ProfessionalProfilePage() {
                     onChange={(e) => updateProfile({ yearsExperience: parseInt(e.target.value) })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
-                    <option value={0}>0-1 years</option>
-                    <option value={2}>2-3 years</option>
-                    <option value={4}>4-5 years</option>
-                    <option value={6}>6-7 years</option>
-                    <option value={8}>8-10 years</option>
-                    <option value={11}>11-15 years</option>
-                    <option value={16}>15+ years</option>
+                    <option value={0}>Less than 1 year</option>
+                    {Array.from({ length: 20 }, (_, i) => i + 1).map(year => (
+                      <option key={year} value={year}>
+                        {year} year{year !== 1 ? 's' : ''}
+                      </option>
+                    ))}
+                    <option value={21}>20+ years</option>
                   </select>
                 </div>
-              </div>
-            </div>
 
-            {/* Contact Information */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Work Email
+                    Work Email (Optional)
                   </label>
                   <input
                     type="email"
                     value={profile.workEmail}
                     onChange={(e) => updateProfile({ workEmail: e.target.value })}
-                    placeholder="john.doe@company.com"
+                    placeholder="you@company.com"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Optional - helps verify your employment for trust and credibility
+                    Helps verify your professional background
                   </p>
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     LinkedIn Profile URL
@@ -362,14 +398,11 @@ export default function ProfessionalProfilePage() {
                     placeholder="https://linkedin.com/in/your-profile"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Helps candidates learn more about your background before booking
-                  </p>
                 </div>
               </div>
             </div>
 
-            {/* Session Rate */}
+            {/* Session Pricing */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Session Pricing</h3>
               <div>
@@ -381,45 +414,37 @@ export default function ProfessionalProfilePage() {
                   <input
                     type="number"
                     value={profile.sessionRateCents / 100}
-                    onChange={(e) => updateProfile({ sessionRateCents: (parseFloat(e.target.value) || 0) * 100 })}
+                    onChange={(e) => updateProfile({ sessionRateCents: Math.max(10, parseInt(e.target.value) || 50) * 100 })}
+                    placeholder="50"
                     min="10"
-                    max="500"
                     step="5"
                     className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
-                <p className="text-sm text-gray-500 mt-2">
-                  Set your rate for 30-minute sessions. Most professionals charge $50-$200 based on seniority.
+                <p className="text-xs text-gray-500 mt-1">
+                  Most professionals charge $25-100 per session. You'll receive 90% after platform fees.
                 </p>
-                <div className="mt-2 text-sm text-gray-600">
-                  <strong>You'll receive:</strong> ${((profile.sessionRateCents * 0.90) / 100).toFixed(2)} after platform fees (10%)
-                </div>
               </div>
             </div>
 
             {/* Bio */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Professional Bio</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">About You</h3>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tell candidates about yourself *
+                  Professional Bio <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   value={profile.bio}
                   onChange={(e) => updateProfile({ bio: e.target.value })}
-                  placeholder="I'm a VP at Goldman Sachs with 8 years in M&A. Previously worked at Blackstone and graduated from Wharton. I help candidates prepare for banking interviews and understand the industry landscape..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 h-32"
-                  maxLength={500}
+                  placeholder="Tell candidates about your background, expertise, and what they can expect from a session with you..."
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   required
                 />
-                <div className="mt-1 flex justify-between items-center">
-                  <p className="text-xs text-gray-500">
-                    Describe your background, experience, and how you can help candidates (min 50 characters)
-                  </p>
-                  <span className={`text-xs ${profile.bio.length < 50 ? 'text-red-500' : 'text-gray-500'}`}>
-                    {profile.bio.length}/500
-                  </span>
-                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {profile.bio.length}/500 characters • Minimum 50 characters
+                </p>
               </div>
             </div>
 
@@ -428,12 +453,12 @@ export default function ProfessionalProfilePage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Areas of Expertise</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select your expertise areas *
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Select your areas of expertise <span className="text-red-500">*</span>
                   </label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
-                    {EXPERTISE_OPTIONS.map(expertise => (
-                      <label key={expertise} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {PRESET_EXPERTISE.map(expertise => (
+                      <label key={expertise} className="flex items-center space-x-2 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={profile.expertise.includes(expertise)}
@@ -444,7 +469,7 @@ export default function ProfessionalProfilePage() {
                               removeExpertise(expertise);
                             }
                           }}
-                          className="text-indigo-600 focus:ring-indigo-500"
+                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         />
                         <span className="text-sm text-gray-700">{expertise}</span>
                       </label>
@@ -506,9 +531,9 @@ export default function ProfessionalProfilePage() {
           <div className="mt-8 pt-6 border-t border-gray-200">
             <button
               onClick={handleSubmit}
-              disabled={!canSubmit || loading}
+              disabled={!canSubmit}
               className={`w-full py-3 px-6 rounded-lg font-semibold text-lg transition-all duration-300 ease-out ${
-                canSubmit && !loading
+                canSubmit
                   ? 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-lg hover:scale-105'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
