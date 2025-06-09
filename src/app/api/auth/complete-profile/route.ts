@@ -20,6 +20,11 @@ interface CompleteProfileRequest {
   targetRole?: string;
   targetIndustry?: string;
   offerBonusCents?: number;
+  schoolEmail?: string;
+  linkedinUrl?: string;
+  resumeUrl?: string;
+  clubs?: string;
+
   // Professional fields
   title?: string;
   company?: string;
@@ -28,6 +33,7 @@ interface CompleteProfileRequest {
   sessionRateCents?: number;
   bio?: string;
   expertise?: string[];
+  workEmail?: string;
 }
 
 /**
@@ -63,6 +69,19 @@ export const POST = withAuth(async (request: NextRequest, context: any, session:
     return errorResponse('Role mismatch', 400);
   }
 
+  // Validate email formats if provided
+  if (profileData.schoolEmail && !isValidEduEmail(profileData.schoolEmail)) {
+    return errorResponse('School email must end with .edu', 400);
+  }
+
+  if (profileData.workEmail && !isValidEmail(profileData.workEmail)) {
+    return errorResponse('Invalid work email format', 400);
+  }
+
+  if (profileData.linkedinUrl && !isValidLinkedInUrl(profileData.linkedinUrl)) {
+    return errorResponse('Invalid LinkedIn URL format', 400);
+  }
+
   // Update profile based on role
   if (role === 'candidate') {
     // Validate candidate fields
@@ -70,7 +89,7 @@ export const POST = withAuth(async (request: NextRequest, context: any, session:
       return errorResponse('Missing required fields: school, major, targetRole', 400);
     }
 
-    // Update candidate profile
+    // Update candidate profile with new fields
     user.school = profileData.school;
     user.major = profileData.major;
     user.minor = profileData.minor || '';
@@ -79,6 +98,10 @@ export const POST = withAuth(async (request: NextRequest, context: any, session:
     user.targetRole = profileData.targetRole;
     user.targetIndustry = profileData.targetIndustry || '';
     user.offerBonusCents = profileData.offerBonusCents || 20000;
+    user.schoolEmail = profileData.schoolEmail || '';
+    user.linkedinUrl = profileData.linkedinUrl || '';
+    user.resumeUrl = profileData.resumeUrl || '';
+    user.clubs = profileData.clubs || '';
 
   } else if (role === 'professional') {
     // Validate professional fields
@@ -90,7 +113,7 @@ export const POST = withAuth(async (request: NextRequest, context: any, session:
       return errorResponse('Session rate must be at least $10', 400);
     }
 
-    // Update professional profile
+    // Update professional profile with new fields
     user.title = profileData.title;
     user.company = profileData.company;
     user.industry = profileData.industry;
@@ -98,6 +121,10 @@ export const POST = withAuth(async (request: NextRequest, context: any, session:
     user.sessionRateCents = profileData.sessionRateCents || 5000;
     user.bio = profileData.bio;
     user.expertise = profileData.expertise || [];
+    
+    // New fields
+    user.workEmail = profileData.workEmail || '';
+    user.linkedinUrl = profileData.linkedinUrl || '';
 
     // Create Stripe Connect account for professional
     try {
@@ -123,7 +150,9 @@ export const POST = withAuth(async (request: NextRequest, context: any, session:
           platform_user_id: user._id.toString(),
           user_email: user.email,
           company: profileData.company,
-          title: profileData.title
+          title: profileData.title,
+          work_email: profileData.workEmail || '',
+          linkedin_url: profileData.linkedinUrl || ''
         }
       });
 
@@ -171,3 +200,19 @@ export const POST = withAuth(async (request: NextRequest, context: any, session:
     message: 'Profile completed successfully!'
   });
 });
+
+// Helper validation functions
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+function isValidEduEmail(email: string): boolean {
+  const eduEmailRegex = /^[^\s@]+@[^\s@]+\.edu$/;
+  return eduEmailRegex.test(email);
+}
+
+function isValidLinkedInUrl(url: string): boolean {
+  const linkedinRegex = /^https?:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9\-]+\/?$/;
+  return linkedinRegex.test(url);
+}

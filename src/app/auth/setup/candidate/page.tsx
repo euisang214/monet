@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { apiRequest } from '@/lib/utils';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { uploadFile, validateFile, getFilePreview, cleanupFilePreview } from '@/lib/upload';
 
 interface CandidateProfile {
   school: string;
@@ -17,12 +18,21 @@ interface CandidateProfile {
   targetRole: string;
   targetIndustry: string;
   offerBonusCents: number;
+  // New fields
+  schoolEmail: string;
+  linkedinUrl: string;
+  resumeUrl: string;
+  clubs: string;
 }
 
 export default function CandidateProfilePage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [uploadingResume, setUploadingResume] = useState(false);
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [resumePreview, setResumePreview] = useState<string>('');
+  
   const [profile, setProfile] = useState<CandidateProfile>({
     school: '',
     major: '',
@@ -31,7 +41,12 @@ export default function CandidateProfilePage() {
     gpa: '',
     targetRole: '',
     targetIndustry: '',
-    offerBonusCents: 20000 // $200 default
+    offerBonusCents: 20000, // $200 default
+    // New fields
+    schoolEmail: '',
+    linkedinUrl: '',
+    resumeUrl: '',
+    clubs: ''
   });
 
   const { isAuthenticated, isLoading } = useAuthGuard({
@@ -65,10 +80,59 @@ export default function CandidateProfilePage() {
     setProfile(prev => ({ ...prev, ...updates }));
   };
 
+  const handleResumeUpload = async (file: File) => {
+    const validation = validateFile(file, 'resume');
+    if (!validation.valid) {
+      alert(validation.error);
+      return;
+    }
+
+    setUploadingResume(true);
+    setResumeFile(file);
+
+    try {
+      const result = await uploadFile(file, 'resume', session?.user?.id);
+      if (result.success) {
+        updateProfile({ resumeUrl: result.fileUrl });
+        setResumePreview(file.name);
+      } else {
+        alert(result.error || 'Failed to upload resume');
+      }
+    } catch (error) {
+      console.error('Resume upload error:', error);
+      alert('Failed to upload resume');
+    } finally {
+      setUploadingResume(false);
+    }
+  };
+
+  const validateLinkedInUrl = (url: string): boolean => {
+    if (!url) return true; // Optional field
+    const linkedinPattern = /^https?:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9\-]+\/?$/;
+    return linkedinPattern.test(url);
+  };
+
+  const validateSchoolEmail = (email: string): boolean => {
+    if (!email) return true; // Optional field
+    const eduPattern = /^[^\s@]+@[^\s@]+\.edu$/;
+    return eduPattern.test(email);
+  };
+
   const handleSubmit = async () => {
     // Validate required fields
     if (!profile.school || !profile.major || !profile.targetRole) {
-      alert('Please fill in all required fields');
+      alert('Please fill in all required fields (School, Major, Target Role)');
+      return;
+    }
+
+    // Validate optional fields format
+    if (profile.linkedinUrl && !validateLinkedInUrl(profile.linkedinUrl)) {
+      alert('Please enter a valid LinkedIn URL (e.g., https://linkedin.com/in/yourname)');
+      return;
+    }
+
+    if (profile.schoolEmail && !validateSchoolEmail(profile.schoolEmail)) {
+      alert('Please enter a valid school email address ending in .edu');
       return;
     }
 
@@ -138,7 +202,7 @@ export default function CandidateProfilePage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700">Complete Your Profile</span>
-            <span className="text-sm text-gray-500">Almost done!</span>
+            <span className="text-sm text-gray-500">Step 2 of 2</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div className="bg-indigo-600 h-2 rounded-full w-3/4"></div>
@@ -152,7 +216,7 @@ export default function CandidateProfilePage() {
             <p className="text-gray-600">Tell us about your academic background and career goals</p>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Academic Information */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Academic Information</h3>
@@ -169,6 +233,21 @@ export default function CandidateProfilePage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     required
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    School Email (.edu)
+                  </label>
+                  <input
+                    type="email"
+                    value={profile.schoolEmail}
+                    onChange={(e) => updateProfile({ schoolEmail: e.target.value })}
+                    placeholder="john.doe@harvard.edu"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Optional - helps verify student status for potential discounts
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -223,6 +302,98 @@ export default function CandidateProfilePage() {
                     placeholder="3.8"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* Extracurricular Activities */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Extracurricular Activities</h3>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Clubs, Organizations, Leadership Roles
+                </label>
+                <textarea
+                  value={profile.clubs}
+                  onChange={(e) => updateProfile({ clubs: e.target.value })}
+                  placeholder="Investment Club President, Debate Team, Volunteer at Local Food Bank..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 h-24"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  List your involvement in clubs, sports, volunteer work, leadership positions, etc.
+                </p>
+              </div>
+            </div>
+
+            {/* Professional Profiles */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Professional Profiles</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    LinkedIn Profile URL
+                  </label>
+                  <input
+                    type="url"
+                    value={profile.linkedinUrl}
+                    onChange={(e) => updateProfile({ linkedinUrl: e.target.value })}
+                    placeholder="https://linkedin.com/in/your-profile"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Helps professionals learn more about your background before the session
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Resume Upload
+                  </label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-gray-400 transition-colors">
+                    {profile.resumeUrl || resumePreview ? (
+                      <div className="text-center">
+                        <div className="text-green-600 text-2xl mb-2">📄</div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {resumePreview || 'Resume uploaded'}
+                        </p>
+                        <button
+                          onClick={() => {
+                            updateProfile({ resumeUrl: '' });
+                            setResumePreview('');
+                            setResumeFile(null);
+                          }}
+                          className="text-sm text-indigo-600 hover:text-indigo-800 mt-1"
+                        >
+                          Upload different file
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <div className="text-gray-400 text-2xl mb-2">📄</div>
+                        <label className="cursor-pointer">
+                          <span className="text-sm font-medium text-indigo-600 hover:text-indigo-800">
+                            {uploadingResume ? 'Uploading...' : 'Click to upload'}
+                          </span>
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept=".pdf,.doc,.docx"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleResumeUpload(file);
+                            }}
+                            disabled={uploadingResume}
+                          />
+                        </label>
+                        <p className="text-xs text-gray-500 mt-1">
+                          PDF, DOC, or DOCX up to 10MB
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Optional - helps professionals prepare for your session and provide better feedback
+                  </p>
                 </div>
               </div>
             </div>

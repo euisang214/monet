@@ -39,17 +39,33 @@ export const GET = withAuth(async (
       gpa: user.gpa || '',
       targetRole: user.targetRole || '',
       targetIndustry: user.targetIndustry || '',
-      offerBonusCents: user.offerBonusCents || 20000
+      offerBonusCents: user.offerBonusCents || 20000,
+      schoolEmail: user.schoolEmail || '',
+      linkedinUrl: user.linkedinUrl || '',
+      resumeUrl: user.resumeUrl || '',
+      clubs: user.clubs || '',
+      
+      // Verification status (read-only)
+      schoolEmailVerified: user.schoolEmailVerified || false
     };
   } else if (user.role === 'professional') {
     profileData = {
+      // Existing fields
       title: user.title || '',
       company: user.company || '',
       industry: user.industry || '',
       yearsExperience: user.yearsExperience || 0,
       sessionRateCents: user.sessionRateCents || 5000,
       bio: user.bio || '',
-      expertise: user.expertise || []
+      expertise: user.expertise || [],
+      
+      // New fields
+      workEmail: user.workEmail || '',
+      linkedinUrl: user.linkedinUrl || '',
+      
+      // Verification status (read-only)
+      workEmailVerified: user.workEmailVerified || false,
+      stripeAccountVerified: user.stripeAccountVerified || false
     };
   }
 

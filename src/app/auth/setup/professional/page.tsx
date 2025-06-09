@@ -7,53 +7,50 @@ import { useRouter } from "next/navigation";
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { apiRequest } from '@/lib/utils';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { uploadFile, validateFile, getFilePreview, cleanupFilePreview } from '@/lib/upload';
 
-interface ProfessionalProfile {
-  title: string;
-  company: string;
-  industry: string;
-  yearsExperience: number;
-  sessionRateCents: number;
-  bio: string;
-  expertise: string[];
+interface CandidateProfile {
+  school: string;
+  major: string;
+  minor: string;
+  graduationYear: string;
+  gpa: string;
+  targetRole: string;
+  targetIndustry: string;
+  offerBonusCents: number;
+  // New fields
+  schoolEmail: string;
+  linkedinUrl: string;
+  resumeUrl: string;
+  clubs: string;
 }
 
-const INDUSTRIES = [
-  'Investment Banking',
-  'Management Consulting', 
-  'Private Equity',
-  'Hedge Funds',
-  'Technology',
-  'Finance',
-  'Healthcare',
-  'Real Estate',
-  'Other'
-];
-
-const COMMON_EXPERTISE = [
-  'Interview Prep', 'Resume Review', 'Career Strategy', 'Networking',
-  'Investment Banking', 'Management Consulting', 'Private Equity',
-  'Software Engineering', 'Product Management', 'Data Science',
-  'Financial Modeling', 'Valuation', 'Due Diligence', 'Client Relations'
-];
-
-export default function ProfessionalProfilePage() {
+export default function CandidateProfilePage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [profile, setProfile] = useState<ProfessionalProfile>({
-    title: '',
-    company: '',
-    industry: '',
-    yearsExperience: 0,
-    sessionRateCents: 5000, // $50 default
-    bio: '',
-    expertise: []
+  const [uploadingResume, setUploadingResume] = useState(false);
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [resumePreview, setResumePreview] = useState<string>('');
+  
+  const [profile, setProfile] = useState<CandidateProfile>({
+    school: '',
+    major: '',
+    minor: '',
+    graduationYear: '',
+    gpa: '',
+    targetRole: '',
+    targetIndustry: '',
+    offerBonusCents: 20000, // $200 default
+    // New fields
+    schoolEmail: '',
+    linkedinUrl: '',
+    resumeUrl: '',
+    clubs: ''
   });
-  const [newExpertise, setNewExpertise] = useState('');
 
   const { isAuthenticated, isLoading } = useAuthGuard({
-    requiredRole: 'professional',
+    requiredRole: 'candidate',
     requireProfileComplete: false
   });
 
@@ -79,30 +76,63 @@ export default function ProfessionalProfilePage() {
     }
   };
 
-  const updateProfile = (updates: Partial<ProfessionalProfile>) => {
+  const updateProfile = (updates: Partial<CandidateProfile>) => {
     setProfile(prev => ({ ...prev, ...updates }));
   };
 
-  const addExpertise = (skill: string) => {
-    if (skill && !profile.expertise.includes(skill)) {
-      updateProfile({ expertise: [...profile.expertise, skill] });
+  const handleResumeUpload = async (file: File) => {
+    const validation = validateFile(file, 'resume');
+    if (!validation.valid) {
+      alert(validation.error);
+      return;
     }
-    setNewExpertise('');
+
+    setUploadingResume(true);
+    setResumeFile(file);
+
+    try {
+      const result = await uploadFile(file, 'resume', session?.user?.id);
+      if (result.success) {
+        updateProfile({ resumeUrl: result.fileUrl });
+        setResumePreview(file.name);
+      } else {
+        alert(result.error || 'Failed to upload resume');
+      }
+    } catch (error) {
+      console.error('Resume upload error:', error);
+      alert('Failed to upload resume');
+    } finally {
+      setUploadingResume(false);
+    }
   };
 
-  const removeExpertise = (skill: string) => {
-    updateProfile({ expertise: profile.expertise.filter(s => s !== skill) });
+  const validateLinkedInUrl = (url: string): boolean => {
+    if (!url) return true; // Optional field
+    const linkedinPattern = /^https?:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9\-]+\/?$/;
+    return linkedinPattern.test(url);
+  };
+
+  const validateSchoolEmail = (email: string): boolean => {
+    if (!email) return true; // Optional field
+    const eduPattern = /^[^\s@]+@[^\s@]+\.edu$/;
+    return eduPattern.test(email);
   };
 
   const handleSubmit = async () => {
     // Validate required fields
-    if (!profile.title || !profile.company || !profile.industry || !profile.bio) {
-      alert('Please fill in all required fields');
+    if (!profile.school || !profile.major || !profile.targetRole) {
+      alert('Please fill in all required fields (School, Major, Target Role)');
       return;
     }
 
-    if (profile.sessionRateCents < 1000) {
-      alert('Session rate must be at least $10');
+    // Validate optional fields format
+    if (profile.linkedinUrl && !validateLinkedInUrl(profile.linkedinUrl)) {
+      alert('Please enter a valid LinkedIn URL (e.g., https://linkedin.com/in/yourname)');
+      return;
+    }
+
+    if (profile.schoolEmail && !validateSchoolEmail(profile.schoolEmail)) {
+      alert('Please enter a valid school email address ending in .edu');
       return;
     }
 
@@ -113,20 +143,14 @@ export default function ProfessionalProfilePage() {
         method: 'POST',
         body: JSON.stringify({
           userId: session?.user?.id,
-          role: 'professional',
+          role: 'candidate',
           ...profile
         })
       });
       
       if (result.success) {
-        // Check if Stripe onboarding is needed
-        if (result.data?.stripeOnboardingUrl) {
-          // Redirect to Stripe onboarding
-          window.location.href = result.data.stripeOnboardingUrl;
-        } else {
-          // Redirect to professional dashboard
-          router.push('/professional/dashboard');
-        }
+        // Redirect to candidate dashboard
+        router.push('/candidate/dashboard');
       } else {
         alert(result.error || 'Failed to save profile. Please try again.');
       }
@@ -138,8 +162,7 @@ export default function ProfessionalProfilePage() {
     }
   };
 
-  const canSubmit = profile.title && profile.company && profile.industry && 
-                   profile.bio.length >= 50 && profile.sessionRateCents >= 1000;
+  const canSubmit = profile.school && profile.major && profile.targetRole;
 
   if (isLoading) {
     return <LoadingSpinner message="Loading your profile..." />;
@@ -179,7 +202,7 @@ export default function ProfessionalProfilePage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700">Complete Your Profile</span>
-            <span className="text-sm text-gray-500">Almost done!</span>
+            <span className="text-sm text-gray-500">Step 2 of 2</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div className="bg-indigo-600 h-2 rounded-full w-3/4"></div>
@@ -189,196 +212,259 @@ export default function ProfessionalProfilePage() {
         {/* Profile Form */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Complete Your Professional Profile</h1>
-            <p className="text-gray-600">Tell us about your experience and set your mentoring rate</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Complete Your Candidate Profile</h1>
+            <p className="text-gray-600">Tell us about your academic background and career goals</p>
           </div>
 
-          <div className="space-y-6">
-            {/* Professional Information */}
+          <div className="space-y-8">
+            {/* Academic Information */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Professional Information</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Academic Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Job Title *
+                    School/University *
                   </label>
                   <input
                     type="text"
-                    value={profile.title}
-                    onChange={(e) => updateProfile({ title: e.target.value })}
-                    placeholder="Senior Associate"
+                    value={profile.school}
+                    onChange={(e) => updateProfile({ school: e.target.value })}
+                    placeholder="Harvard University"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Company *
+                    School Email (.edu)
+                  </label>
+                  <input
+                    type="email"
+                    value={profile.schoolEmail}
+                    onChange={(e) => updateProfile({ schoolEmail: e.target.value })}
+                    placeholder="john.doe@harvard.edu"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Optional - helps verify student status for potential discounts
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Major *
                   </label>
                   <input
                     type="text"
-                    value={profile.company}
-                    onChange={(e) => updateProfile({ company: e.target.value })}
-                    placeholder="Goldman Sachs"
+                    value={profile.major}
+                    onChange={(e) => updateProfile({ major: e.target.value })}
+                    placeholder="Economics"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Industry *
+                    Minor (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={profile.minor}
+                    onChange={(e) => updateProfile({ minor: e.target.value })}
+                    placeholder="Computer Science"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Graduation Year
                   </label>
                   <select
-                    value={profile.industry}
-                    onChange={(e) => updateProfile({ industry: e.target.value })}
+                    value={profile.graduationYear}
+                    onChange={(e) => updateProfile({ graduationYear: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    required
                   >
-                    <option value="">Select Industry</option>
-                    {INDUSTRIES.map(industry => (
-                      <option key={industry} value={industry}>{industry}</option>
-                    ))}
+                    <option value="">Select Year</option>
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Years of Experience *
+                    GPA (optional)
                   </label>
                   <input
-                    type="number"
-                    value={profile.yearsExperience}
-                    onChange={(e) => updateProfile({ yearsExperience: parseInt(e.target.value) || 0 })}
-                    min="0"
-                    max="50"
+                    type="text"
+                    value={profile.gpa}
+                    onChange={(e) => updateProfile({ gpa: e.target.value })}
+                    placeholder="3.8"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    required
                   />
                 </div>
               </div>
             </div>
 
-            {/* Session Rate */}
+            {/* Extracurricular Activities */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Session Rate</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Extracurricular Activities</h3>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Rate per 30-minute session *
+                  Clubs, Organizations, Leadership Roles
+                </label>
+                <textarea
+                  value={profile.clubs}
+                  onChange={(e) => updateProfile({ clubs: e.target.value })}
+                  placeholder="Investment Club President, Debate Team, Volunteer at Local Food Bank..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 h-24"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  List your involvement in clubs, sports, volunteer work, leadership positions, etc.
+                </p>
+              </div>
+            </div>
+
+            {/* Professional Profiles */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Professional Profiles</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    LinkedIn Profile URL
+                  </label>
+                  <input
+                    type="url"
+                    value={profile.linkedinUrl}
+                    onChange={(e) => updateProfile({ linkedinUrl: e.target.value })}
+                    placeholder="https://linkedin.com/in/your-profile"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Helps professionals learn more about your background before the session
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Resume Upload
+                  </label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-gray-400 transition-colors">
+                    {profile.resumeUrl || resumePreview ? (
+                      <div className="text-center">
+                        <div className="text-green-600 text-2xl mb-2">📄</div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {resumePreview || 'Resume uploaded'}
+                        </p>
+                        <button
+                          onClick={() => {
+                            updateProfile({ resumeUrl: '' });
+                            setResumePreview('');
+                            setResumeFile(null);
+                          }}
+                          className="text-sm text-indigo-600 hover:text-indigo-800 mt-1"
+                        >
+                          Upload different file
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <div className="text-gray-400 text-2xl mb-2">📄</div>
+                        <label className="cursor-pointer">
+                          <span className="text-sm font-medium text-indigo-600 hover:text-indigo-800">
+                            {uploadingResume ? 'Uploading...' : 'Click to upload'}
+                          </span>
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept=".pdf,.doc,.docx"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleResumeUpload(file);
+                            }}
+                            disabled={uploadingResume}
+                          />
+                        </label>
+                        <p className="text-xs text-gray-500 mt-1">
+                          PDF, DOC, or DOCX up to 10MB
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Optional - helps professionals prepare for your session and provide better feedback
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Career Goals */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Career Goals</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Target Role *
+                  </label>
+                  <input
+                    type="text"
+                    value={profile.targetRole}
+                    onChange={(e) => updateProfile({ targetRole: e.target.value })}
+                    placeholder="Investment Banking Analyst"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Target Industry
+                  </label>
+                  <select
+                    value={profile.targetIndustry}
+                    onChange={(e) => updateProfile({ targetIndustry: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="">Select Industry</option>
+                    <option value="Investment Banking">Investment Banking</option>
+                    <option value="Management Consulting">Management Consulting</option>
+                    <option value="Private Equity">Private Equity</option>
+                    <option value="Hedge Funds">Hedge Funds</option>
+                    <option value="Technology">Technology</option>
+                    <option value="Healthcare">Healthcare</option>
+                    <option value="Real Estate">Real Estate</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Offer Bonus */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Offer Bonus Pledge</h3>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <p className="text-blue-900 text-sm leading-relaxed">
+                  If you land an offer through Monet, you'll pay this bonus to the first professional 
+                  you spoke with from that firm. This creates an incentive for professionals to help you succeed.
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Offer Bonus Amount
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-2 text-gray-500">$</span>
                   <input
                     type="number"
-                    value={profile.sessionRateCents / 100}
-                    onChange={(e) => updateProfile({ sessionRateCents: (parseFloat(e.target.value) || 0) * 100 })}
-                    min="10"
-                    max="500"
-                    step="5"
+                    value={profile.offerBonusCents / 100}
+                    onChange={(e) => updateProfile({ offerBonusCents: (parseFloat(e.target.value) || 0) * 100 })}
+                    min="100"
+                    max="1000"
+                    step="50"
                     className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    required
                   />
                 </div>
                 <p className="text-sm text-gray-500 mt-2">
-                  Most professionals charge $50-$150 per session. You keep ~90% after platform fees.
+                  Recommended: $100-$1,000 (most candidates pledge ~$200)
                 </p>
-              </div>
-            </div>
-
-            {/* Bio */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Professional Bio</h3>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tell candidates about your background *
-                </label>
-                <textarea
-                  value={profile.bio}
-                  onChange={(e) => updateProfile({ bio: e.target.value })}
-                  placeholder="Tell candidates about your background, expertise, and what you can help them with..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 h-32"
-                  required
-                />
-                <div className="mt-2 flex justify-between items-center">
-                  <div className={`text-sm ${profile.bio.length < 50 ? 'text-red-500' : 'text-gray-500'}`}>
-                    {profile.bio.length}/500 characters {profile.bio.length < 50 && '(minimum 50)'}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Expertise */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Areas of Expertise</h3>
-              
-              {/* Quick Add Buttons */}
-              <div className="mb-4">
-                <p className="text-sm text-gray-600 mb-2">Quick add common skills:</p>
-                <div className="flex flex-wrap gap-2">
-                  {COMMON_EXPERTISE.filter(skill => !profile.expertise.includes(skill)).slice(0, 8).map(skill => (
-                    <button
-                      key={skill}
-                      onClick={() => addExpertise(skill)}
-                      className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-md hover:bg-gray-200 transition-colors"
-                    >
-                      + {skill}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Custom Expertise Input */}
-              <div className="flex gap-2 mb-4">
-                <input
-                  type="text"
-                  value={newExpertise}
-                  onChange={(e) => setNewExpertise(e.target.value)}
-                  placeholder="Add custom expertise..."
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      addExpertise(newExpertise);
-                    }
-                  }}
-                />
-                <button
-                  onClick={() => addExpertise(newExpertise)}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-medium"
-                >
-                  Add
-                </button>
-              </div>
-
-              {/* Selected Expertise */}
-              {profile.expertise.length > 0 && (
-                <div>
-                  <p className="text-sm text-gray-600 mb-2">Your expertise areas:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {profile.expertise.map(skill => (
-                      <span
-                        key={skill}
-                        className="px-3 py-1 bg-indigo-100 text-indigo-800 text-sm rounded-md flex items-center gap-2"
-                      >
-                        {skill}
-                        <button
-                          onClick={() => removeExpertise(skill)}
-                          className="text-indigo-600 hover:text-indigo-800"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Earnings Preview */}
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <h4 className="font-semibold text-green-900 mb-2">Earnings Preview</h4>
-              <div className="text-sm text-green-800 space-y-1">
-                <p>• <strong>Per session:</strong> ${((profile.sessionRateCents * 0.9) / 100).toFixed(0)} (after platform fees)</p>
-                <p>• <strong>10 sessions/month:</strong> ${((profile.sessionRateCents * 0.9 * 10) / 100).toFixed(0)}</p>
-                <p>• <strong>Plus:</strong> Referral bonuses and offer bonuses on top!</p>
               </div>
             </div>
           </div>
@@ -394,11 +480,8 @@ export default function ProfessionalProfilePage() {
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              {loading ? 'Setting Up Profile...' : 'Complete Profile & Start Earning'}
+              {loading ? 'Saving Profile...' : 'Complete Profile & Start Networking'}
             </button>
-            <p className="text-sm text-gray-500 text-center mt-2">
-              Next: Set up payments with Stripe to receive your earnings
-            </p>
           </div>
         </div>
       </div>

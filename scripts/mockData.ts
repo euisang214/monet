@@ -35,7 +35,8 @@ export async function loadEnhancedMockData() {
 
   console.log('🗑️ Cleared existing mock data');
 
-  // Create Candidates (expanded from 3 to 12)
+  
+// Create Candidates 
   const candidates = await User.insertMany([
     {
       email: 'alice.chen@harvard.edu',
@@ -50,6 +51,11 @@ export async function loadEnhancedMockData() {
       targetRole: 'Investment Banking Analyst',
       targetIndustry: 'Investment Banking',
       offerBonusCents: 50000, // $500
+      schoolEmail: 'alice.chen@harvard.edu',
+      schoolEmailVerified: true,
+      linkedinUrl: 'https://linkedin.com/in/alice-chen-harvard',
+      resumeUrl: 'https://monet-file-uploads-dev.s3.us-east-1.amazonaws.com/resumes/alice_chen_resume.pdf',
+      clubs: 'Harvard Investment Club President, Women in Business VP, Volunteer at Boston Food Bank'
     },
     {
       email: 'john.martinez@wharton.edu',
@@ -58,139 +64,35 @@ export async function loadEnhancedMockData() {
       school: 'University of Pennsylvania',
       major: 'Finance',
       graduationYear: '2024',
-      gpa: '3.7',
       targetRole: 'Management Consultant',
       targetIndustry: 'Management Consulting',
       offerBonusCents: 30000, // $300
+      schoolEmail: 'john.martinez@upenn.edu',
+      schoolEmailVerified: true,
+      linkedinUrl: 'https://linkedin.com/in/johnmartinez-wharton',
+      resumeUrl: 'https://monet-file-uploads-dev.s3.us-east-1.amazonaws.com/resumes/john_martinez_resume.pdf',
+      clubs: 'Wharton Consulting Club, Finance Society, Intramural Soccer Team Captain'
     },
     {
       email: 'sarah.kim@stanford.edu',
       name: 'Sarah Kim',
       role: 'candidate',
-      profileImageUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
       school: 'Stanford University',
       major: 'Computer Science',
       minor: 'Economics',
       graduationYear: '2025',
-      gpa: '3.9',
       targetRole: 'Software Engineer',
       targetIndustry: 'Technology',
       offerBonusCents: 25000, // $250
-    },
-    {
-      email: 'michael.brown@mit.edu',
-      name: 'Michael Brown',
-      role: 'candidate',
-      school: 'Massachusetts Institute of Technology',
-      major: 'Electrical Engineering',
-      graduationYear: '2025',
-      gpa: '3.8',
-      targetRole: 'Quantitative Analyst',
-      targetIndustry: 'Hedge Funds',
-      offerBonusCents: 40000, // $400
-    },
-    {
-      email: 'emma.wilson@yale.edu',
-      name: 'Emma Wilson',
-      role: 'candidate',
-      school: 'Yale University',
-      major: 'Political Science',
-      minor: 'Economics',
-      graduationYear: '2024',
-      gpa: '3.6',
-      targetRole: 'Management Consultant',
-      targetIndustry: 'Management Consulting',
-      offerBonusCents: 35000, // $350
-    },
-    {
-      email: 'david.garcia@columbia.edu',
-      name: 'David Garcia',
-      role: 'candidate',
-      school: 'Columbia University',
-      major: 'Applied Mathematics',
-      graduationYear: '2025',
-      gpa: '3.7',
-      targetRole: 'Private Equity Analyst',
-      targetIndustry: 'Private Equity',
-      offerBonusCents: 45000, // $450
-    },
-    {
-      email: 'sophia.johnson@northwestern.edu',
-      name: 'Sophia Johnson',
-      role: 'candidate',
-      school: 'Northwestern University',
-      major: 'Industrial Engineering',
-      graduationYear: '2024',
-      gpa: '3.8',
-      targetRole: 'Investment Banking Analyst',
-      targetIndustry: 'Investment Banking',
-      offerBonusCents: 55000, // $550
-    },
-    {
-      email: 'james.lee@duke.edu',
-      name: 'James Lee',
-      role: 'candidate',
-      school: 'Duke University',
-      major: 'Economics',
-      minor: 'Statistics',
-      graduationYear: '2025',
-      gpa: '3.7',
-      targetRole: 'Consultant',
-      targetIndustry: 'Management Consulting',
-      offerBonusCents: 30000, // $300
-    },
-    {
-      email: 'olivia.taylor@uchicago.edu',
-      name: 'Olivia Taylor',
-      role: 'candidate',
-      school: 'University of Chicago',
-      major: 'Computer Science',
-      graduationYear: '2024',
-      gpa: '3.9',
-      targetRole: 'Product Manager',
-      targetIndustry: 'Technology',
-      offerBonusCents: 28000, // $280
-    },
-    {
-      email: 'william.anderson@dartmouth.edu',
-      name: 'William Anderson',
-      role: 'candidate',
-      school: 'Dartmouth College',
-      major: 'Mathematics',
-      graduationYear: '2025',
-      gpa: '3.6',
-      targetRole: 'Investment Banking Analyst',
-      targetIndustry: 'Investment Banking',
-      offerBonusCents: 42000, // $420
-    },
-    {
-      email: 'ava.thomas@cornell.edu',
-      name: 'Ava Thomas',
-      role: 'candidate',
-      school: 'Cornell University',
-      major: 'Applied Economics',
-      graduationYear: '2024',
-      gpa: '3.8',
-      targetRole: 'Research Analyst',
-      targetIndustry: 'Investment Banking',
-      offerBonusCents: 38000, // $380
-    },
-    {
-      email: 'ethan.white@brown.edu',
-      name: 'Ethan White',
-      role: 'candidate',
-      school: 'Brown University',
-      major: 'International Relations',
-      minor: 'Economics',
-      graduationYear: '2025',
-      gpa: '3.7',
-      targetRole: 'Management Consultant',
-      targetIndustry: 'Management Consulting',
-      offerBonusCents: 33000, // $330
+      schoolEmail: 'sarah.kim@stanford.edu',
+      schoolEmailVerified: true,
+      linkedinUrl: 'https://linkedin.com/in/sarah-kim-stanford',
+      resumeUrl: 'https://monet-file-uploads-dev.s3.us-east-1.amazonaws.com/resumes/sarah_kim_resume.pdf',
+      clubs: 'Stanford Women in Tech, CS Honor Code Council, Habitat for Humanity'
     }
   ]);
 
-  // Create Professionals (expanded from 5 to 15)
+  // Create Professionals
   const professionals = await User.insertMany([
     {
       email: 'michael.thompson@goldmansachs.com',
@@ -205,6 +107,9 @@ export async function loadEnhancedMockData() {
       expertise: ['Investment Banking', 'M&A', 'Financial Modeling', 'Interview Prep', 'Resume Review'],
       stripeAccountId: 'acct_mock_goldman_vp',
       stripeAccountVerified: true,
+      workEmail: 'michael.thompson@gs.com',
+      workEmailVerified: true,
+      linkedinUrl: 'https://linkedin.com/in/michael-thompson-gs'
     },
     {
       email: 'jennifer.wong@mckinsey.com',
@@ -219,6 +124,9 @@ export async function loadEnhancedMockData() {
       expertise: ['Management Consulting', 'Case Interviews', 'Strategy', 'Leadership', 'Financial Services'],
       stripeAccountId: 'acct_mock_mckinsey_ap',
       stripeAccountVerified: true,
+      workEmail: 'jennifer.wong@mckinsey.com',
+      workEmailVerified: true,
+      linkedinUrl: 'https://linkedin.com/in/jennifer-wong-mckinsey'
     },
     {
       email: 'david.park@kkr.com',
@@ -233,7 +141,10 @@ export async function loadEnhancedMockData() {
       expertise: ['Private Equity', 'LBO Modeling', 'Due Diligence', 'Healthcare', 'Technology'],
       stripeAccountId: 'acct_mock_kkr_principal',
       stripeAccountVerified: true,
-      referredBy: professionals[0]?._id, // Referred by Goldman VP
+      workEmail: 'david.park@kkr.com',
+      workEmailVerified: true,
+      linkedinUrl: 'https://linkedin.com/in/david-park-kkr',
+      referredBy: '' // Will be set after creation
     },
     {
       email: 'emily.davis@bain.com',
@@ -248,6 +159,9 @@ export async function loadEnhancedMockData() {
       expertise: ['Management Consulting', 'Case Interviews', 'Retail Strategy', 'Consumer Goods'],
       stripeAccountId: 'acct_mock_bain_principal',
       stripeAccountVerified: true,
+      workEmail: 'emily.davis@bain.com',
+      workEmailVerified: true,
+      linkedinUrl: 'https://linkedin.com/in/emily-davis-bain'
     },
     {
       email: 'alex.rivera@jpmorgan.com',
@@ -262,151 +176,16 @@ export async function loadEnhancedMockData() {
       expertise: ['Investment Banking', 'TMT', 'Early Career', 'Analyst Recruiting'],
       stripeAccountId: 'acct_mock_jpmorgan_associate',
       stripeAccountVerified: true,
-    },
-    {
-      email: 'rachel.cooper@bcg.com',
-      name: 'Rachel Cooper',
-      role: 'professional',
-      title: 'Partner',
-      company: 'Boston Consulting Group',
-      industry: 'Management Consulting',
-      yearsExperience: 15,
-      sessionRateCents: 22000, // $220
-      bio: 'Partner at BCG specializing in digital transformation and healthcare. Former McKinsey consultant with deep expertise in strategy development.',
-      expertise: ['Digital Transformation', 'Healthcare Strategy', 'Case Interviews', 'Leadership Development'],
-      stripeAccountId: 'acct_mock_bcg_partner',
-      stripeAccountVerified: true,
-      referredBy: professionals[1]?._id, // Referred by McKinsey AP
-    },
-    {
-      email: 'thomas.hughes@morganstanley.com',
-      name: 'Thomas Hughes',
-      role: 'professional',
-      title: 'Managing Director',
-      company: 'Morgan Stanley',
-      industry: 'Investment Banking',
-      yearsExperience: 16,
-      sessionRateCents: 30000, // $300
-      bio: 'MD at Morgan Stanley leading the Financial Institutions Group. Expert in IPOs, debt capital markets, and strategic advisory.',
-      expertise: ['Investment Banking', 'IPOs', 'Debt Capital Markets', 'Strategic Advisory', 'Financial Institutions'],
-      stripeAccountId: 'acct_mock_morgan_stanley_md',
-      stripeAccountVerified: true,
-    },
-    {
-      email: 'lisa.zhang@citadel.com',
-      name: 'Lisa Zhang',
-      role: 'professional',
-      title: 'Portfolio Manager',
-      company: 'Citadel',
-      industry: 'Hedge Funds',
-      yearsExperience: 9,
-      sessionRateCents: 27500, // $275
-      bio: 'Portfolio Manager at Citadel focusing on quantitative equity strategies. Former Goldman Sachs trader with expertise in systematic trading.',
-      expertise: ['Quantitative Trading', 'Portfolio Management', 'Risk Management', 'Systematic Strategies'],
-      stripeAccountId: 'acct_mock_citadel_pm',
-      stripeAccountVerified: true,
-    },
-    {
-      email: 'robert.miller@apollo.com',
-      name: 'Robert Miller',
-      role: 'professional',
-      title: 'Vice President',
-      company: 'Apollo Global Management',
-      industry: 'Private Equity',
-      yearsExperience: 6,
-      sessionRateCents: 19000, // $190
-      bio: 'VP at Apollo focusing on distressed investments and special situations. Former restructuring banker with expertise in complex transactions.',
-      expertise: ['Distressed Investing', 'Restructuring', 'Special Situations', 'Credit Analysis'],
-      stripeAccountId: 'acct_mock_apollo_vp',
-      stripeAccountVerified: true,
-      referredBy: professionals[2]?._id, // Referred by KKR Principal
-    },
-    {
-      email: 'samantha.jones@deloitte.com',
-      name: 'Samantha Jones',
-      role: 'professional',
-      title: 'Senior Manager',
-      company: 'Deloitte',
-      industry: 'Management Consulting',
-      yearsExperience: 8,
-      sessionRateCents: 14000, // $140
-      bio: 'Senior Manager at Deloitte in the Strategy & Operations practice. Specialist in operations improvement and digital strategy.',
-      expertise: ['Operations Strategy', 'Digital Transformation', 'Process Improvement', 'Change Management'],
-      stripeAccountId: 'acct_mock_deloitte_sm',
-      stripeAccountVerified: true,
-    },
-    {
-      email: 'kevin.brown@blackrock.com',
-      name: 'Kevin Brown',
-      role: 'professional',
-      title: 'Director',
-      company: 'BlackRock',
-      industry: 'Asset Management',
-      yearsExperience: 11,
-      sessionRateCents: 21000, // $210
-      bio: 'Director at BlackRock in the Multi-Asset Strategies group. Expert in portfolio construction and risk management across asset classes.',
-      expertise: ['Asset Management', 'Portfolio Construction', 'Risk Management', 'Multi-Asset Strategies'],
-      stripeAccountId: 'acct_mock_blackrock_director',
-      stripeAccountVerified: true,
-    },
-    {
-      email: 'maria.gonzalez@pwc.com',
-      name: 'Maria Gonzalez',
-      role: 'professional',
-      title: 'Partner',
-      company: 'PricewaterhouseCoopers',
-      industry: 'Management Consulting',
-      yearsExperience: 14,
-      sessionRateCents: 20500, // $205
-      bio: 'Partner at PwC leading the Financial Services practice. Expert in regulatory compliance and digital transformation in banking.',
-      expertise: ['Financial Services', 'Regulatory Compliance', 'Digital Banking', 'Risk Management'],
-      stripeAccountId: 'acct_mock_pwc_partner',
-      stripeAccountVerified: true,
-    },
-    {
-      email: 'andrew.clark@bridgewater.com',
-      name: 'Andrew Clark',
-      role: 'professional',
-      title: 'Senior Associate',
-      company: 'Bridgewater Associates',
-      industry: 'Hedge Funds',
-      yearsExperience: 5,
-      sessionRateCents: 16500, // $165
-      bio: 'Senior Associate at Bridgewater focusing on global macro strategies. Expert in economic research and systematic investing.',
-      expertise: ['Global Macro', 'Economic Research', 'Systematic Investing', 'Risk Parity'],
-      stripeAccountId: 'acct_mock_bridgewater_sa',
-      stripeAccountVerified: true,
-    },
-    {
-      email: 'stephanie.taylor@kpmg.com',
-      name: 'Stephanie Taylor',
-      role: 'professional',
-      title: 'Director',
-      company: 'KPMG',
-      industry: 'Management Consulting',
-      yearsExperience: 10,
-      sessionRateCents: 17000, // $170
-      bio: 'Director at KPMG in the Deal Advisory practice. Specialist in M&A due diligence and transaction support.',
-      expertise: ['M&A Due Diligence', 'Transaction Support', 'Financial Analysis', 'Deal Advisory'],
-      stripeAccountId: 'acct_mock_kpmg_director',
-      stripeAccountVerified: true,
-      referredBy: professionals[3]?._id, // Referred by Bain Principal
-    },
-    {
-      email: 'jason.kim@twosigma.com',
-      name: 'Jason Kim',
-      role: 'professional',
-      title: 'Quantitative Researcher',
-      company: 'Two Sigma',
-      industry: 'Hedge Funds',
-      yearsExperience: 7,
-      sessionRateCents: 24000, // $240
-      bio: 'Quantitative Researcher at Two Sigma developing machine learning models for systematic trading strategies.',
-      expertise: ['Machine Learning', 'Quantitative Research', 'Systematic Trading', 'Data Science'],
-      stripeAccountId: 'acct_mock_twosigma_qr',
-      stripeAccountVerified: true,
+      workEmail: 'alex.rivera@jpmorgan.com',
+      workEmailVerified: true,
+      linkedinUrl: 'https://linkedin.com/in/alex-rivera-jpmorgan'
     }
   ]);
+
+  // Set up referral relationship after professionals are created
+  await User.findByIdAndUpdate(professionals[2]._id, { 
+    referredBy: professionals[0]._id.toString() 
+  });
 
   console.log(`✅ Created ${candidates.length} candidates and ${professionals.length} professionals`);
 
