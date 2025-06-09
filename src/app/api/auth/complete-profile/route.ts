@@ -98,9 +98,15 @@ export const POST = withAuth(async (request: NextRequest, context: any, session:
     user.targetRole = profileData.targetRole;
     user.targetIndustry = profileData.targetIndustry || '';
     user.offerBonusCents = profileData.offerBonusCents || 20000;
-    user.schoolEmail = profileData.schoolEmail || '';
-    user.linkedinUrl = profileData.linkedinUrl || '';
-    user.resumeUrl = profileData.resumeUrl || '';
+    if (profileData.schoolEmail) {
+      user.schoolEmail = profileData.schoolEmail.trim();
+    }
+    if (profileData.linkedinUrl) {
+      user.linkedinUrl = profileData.linkedinUrl.trim();
+    }
+    if (profileData.resumeUrl) {
+      user.resumeUrl = profileData.resumeUrl.trim();
+    }
     user.clubs = profileData.clubs || '';
 
   } else if (role === 'professional') {
@@ -123,8 +129,12 @@ export const POST = withAuth(async (request: NextRequest, context: any, session:
     user.expertise = profileData.expertise || [];
     
     // New fields
-    user.workEmail = profileData.workEmail || '';
-    user.linkedinUrl = profileData.linkedinUrl || '';
+    if (profileData.workEmail) {
+      user.workEmail = profileData.workEmail.trim();
+    }
+    if (profileData.linkedinUrl) {
+      user.linkedinUrl = profileData.linkedinUrl.trim();
+    }
 
     // Create Stripe Connect account for professional
     try {
@@ -151,8 +161,8 @@ export const POST = withAuth(async (request: NextRequest, context: any, session:
           user_email: user.email,
           company: profileData.company,
           title: profileData.title,
-          work_email: profileData.workEmail || '',
-          linkedin_url: profileData.linkedinUrl || ''
+          work_email: profileData.workEmail ? profileData.workEmail.trim() : '',
+          linkedin_url: profileData.linkedinUrl ? profileData.linkedinUrl.trim() : ''
         }
       });
 
