@@ -8,8 +8,11 @@ export default function TestModeIndicator() {
   if (!isTestMode) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 bg-amber-500 text-white text-center py-2 text-sm font-semibold z-50">
-      🧪 TEST MODE - Use test cards: 4242 4242 4242 4242
-    </div>
+    <>
+      <div className="fixed top-0 left-0 right-0 bg-amber-500 text-white text-center py-2 text-sm font-semibold z-50">
+        🧪 TEST MODE - Use test cards: 4242 4242 4242 4242
+      </div>
+      <div className="h-10" />
+    </>
   );
 }
