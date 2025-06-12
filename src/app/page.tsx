@@ -18,7 +18,7 @@ export default function Home() {
     },
     {
       question: "What happens after I book a chat?",
-      answer: "Once the professional confirms a time, you'll receive an automated calendar invite and Zoom link. After the session, you'll get written feedback from the professional — and if the conversation went well, the professional may refer you to another professional at their firm."
+      answer: "Once the professional confirms a time, you&apos;ll receive an automated calendar invite and Zoom link. After the session, you&apos;ll get written feedback from the professional — and if the conversation went well, the professional may refer you to another professional at their firm."
     },
     {
       question: "How do referrals work?",
@@ -37,7 +37,7 @@ export default function Home() {
       answer: "We are currently focused on investment banking and consulting but plan to expand into adjacent industries based on demand."
     },
     {
-      question: "Can I sign up if I'm in school?",
+      question: "Can I sign up if I&apos;m in school?",
       answer: "Yes! All of our candidates are current students or recent graduates preparing for internships and full-time recruiting."
     }
   ];

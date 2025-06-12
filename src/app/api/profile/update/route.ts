@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { withAuth, errorResponse, successResponse, validateRequestBody } from '@/lib/api/error-handler';
+import type { Session } from 'next-auth';
 import { connectDB } from '@/lib/models/db';
 import User from '@/lib/models/User';
 
@@ -36,7 +37,7 @@ interface UpdateProfileRequest {
  * PUT /api/profile/update
  * Update user profile information
  */
-export const PUT = withAuth(async (request: NextRequest, context: any, session: any) => {
+export const PUT = withAuth(async (request: NextRequest, context: Record<string, unknown>, session: Session) => {
   await connectDB();
   
   // Validate request body

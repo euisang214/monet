@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { withAuth, errorResponse, successResponse } from '@/lib/api/error-handler';
+import type { Session } from 'next-auth';
 import { connectDB } from '@/lib/models/db';
 import User from '@/lib/models/User';
 
@@ -10,7 +11,7 @@ import User from '@/lib/models/User';
 export const GET = withAuth(async (
   request: NextRequest,
   { params }: { params: { id: string } },
-  session: any
+  session: Session
 ) => {
   await connectDB();
   

@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { withAuthAndDB, withDB, errorResponse, successResponse, validateRequestBody } from '@/lib/api/error-handler';
+import type { Session as AuthSession } from 'next-auth';
 import User from '@/lib/models/User';
 import Session from '@/lib/models/Session';
 import Stripe from 'stripe';
@@ -25,7 +26,7 @@ interface BookSessionRequest {
  * POST /api/sessions/book
  * Books a session and creates Stripe PaymentIntent
  */
-export const POST = withAuthAndDB(async (request: NextRequest, context: any, session: any) => {
+export const POST = withAuthAndDB(async (request: NextRequest, context: Record<string, unknown>, session: AuthSession) => {
   // Validate request body
   const validation = await validateRequestBody<BookSessionRequest>(request, [
     'candidateId', 'professionalId', 'scheduledAt'

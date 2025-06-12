@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
 /**
  * Handle meeting started event
  */
-async function handleMeetingStarted(payload: any) {
+async function handleMeetingStarted(payload: Record<string, unknown>) {
   const meetingId = payload.object.id;
   
   try {
@@ -95,7 +95,7 @@ async function handleMeetingStarted(payload: any) {
 /**
  * Handle meeting ended event
  */
-async function handleMeetingEnded(payload: any) {
+async function handleMeetingEnded(payload: Record<string, unknown>) {
   const meetingId = payload.object.id;
   const duration = payload.object.duration; // in minutes
   
@@ -128,7 +128,7 @@ async function handleMeetingEnded(payload: any) {
 /**
  * Handle participant joined event
  */
-async function handleParticipantJoined(payload: any) {
+async function handleParticipantJoined(payload: Record<string, unknown>) {
   const meetingId = payload.object.id;
   const participantName = payload.object.participant.user_name;
   
@@ -141,7 +141,7 @@ async function handleParticipantJoined(payload: any) {
 /**
  * Handle participant left event
  */
-async function handleParticipantLeft(payload: any) {
+async function handleParticipantLeft(payload: Record<string, unknown>) {
   const meetingId = payload.object.id;
   const participantName = payload.object.participant.user_name;
   
@@ -153,7 +153,7 @@ async function handleParticipantLeft(payload: any) {
 /**
  * Handle recording completed event
  */
-async function handleRecordingCompleted(payload: any) {
+async function handleRecordingCompleted(payload: Record<string, unknown>) {
   const meetingId = payload.object.id;
   const recordingFiles = payload.object.recording_files;
   
@@ -167,7 +167,7 @@ async function handleRecordingCompleted(payload: any) {
     console.log('Recording completed for session:', session._id);
     
     // Find video recording URL
-    const videoRecording = recordingFiles.find((file: any) => 
+    const videoRecording = recordingFiles.find((file: Record<string, unknown>) =>
       file.file_type === 'MP4' && file.recording_type === 'shared_screen_with_speaker_view'
     );
     
@@ -186,7 +186,7 @@ async function handleRecordingCompleted(payload: any) {
  * GET /api/webhooks/zoom
  * Zoom webhook verification endpoint
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   // Zoom sends a verification request when setting up webhooks
   return NextResponse.json({ 
     message: 'Zoom webhook endpoint is active',

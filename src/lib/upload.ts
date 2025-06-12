@@ -21,8 +21,7 @@ export interface UploadProgress {
 export async function uploadFile(
   file: File, 
   type: 'resume' | 'profile',
-  userId?: string,
-  onProgress?: (progress: UploadProgress) => void
+  userId?: string
 ): Promise<UploadResult> {
   try {
     // Step 1: Get presigned URL from our API

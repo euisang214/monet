@@ -83,7 +83,7 @@ export default function HowItWorksPage() {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-gray-900 mb-2">Book paid 1:1 coffee chats directly through the platform.</h3>
-                    <p className="text-gray-600">Secure your session with instant booking and payment. Professional rates are transparent, and you'll receive confirmation within 24 hours.</p>
+                    <p className="text-gray-600">Secure your session with instant booking and payment. Professional rates are transparent, and you&apos;ll receive confirmation within 24 hours.</p>
                   </div>
                 </div>
 
@@ -116,7 +116,7 @@ export default function HowItWorksPage() {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-gray-900 mb-2">Build relationships and gain access to referral opportunities.</h3>
-                    <p className="text-gray-600">Strong sessions can lead to internal referrals, follow-up conversations, and access to opportunities that aren't publicly posted.</p>
+                    <p className="text-gray-600">Strong sessions can lead to internal referrals, follow-up conversations, and access to opportunities that aren&apos;t publicly posted.</p>
                   </div>
                 </div>
               </div>
@@ -138,7 +138,7 @@ export default function HowItWorksPage() {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-gray-900 mb-2">Get paid for each completed session.</h3>
-                    <p className="text-gray-600">Set your own rates and receive instant payments after each session. Our platform handles all payment processing and ensures you're compensated fairly for your time.</p>
+                    <p className="text-gray-600">Set your own rates and receive instant payments after each session. Our platform handles all payment processing and ensures you&apos;re compensated fairly for your time.</p>
                   </div>
                 </div>
 

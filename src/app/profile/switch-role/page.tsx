@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useAuthGuard } from '@/hooks/useAuthGuard';
@@ -217,7 +217,7 @@ export default function SwitchRolePage() {
               />
               <span className="text-sm text-gray-700">
                 I understand that switching to {getRoleDisplayName(targetRole)} mode will change my account 
-                functionality and I'll need to complete my {getRoleDisplayName(targetRole)} profile. 
+                functionality and I&apos;ll need to complete my {getRoleDisplayName(targetRole)} profile.
                 I can switch back anytime without losing my data.
               </span>
             </label>
@@ -250,7 +250,7 @@ export default function SwitchRolePage() {
           <div className="bg-gray-100 rounded-lg p-4">
             <h4 className="font-semibold text-gray-900 mb-2">Need Help?</h4>
             <p className="text-gray-600 text-sm">
-              If you're unsure about switching or have questions about the differences between 
+              If you&apos;re unsure about switching or have questions about the differences between
               account types, check out our{' '}
               <Link href="/how-it-works" className="text-indigo-600 hover:text-indigo-800">
                 How It Works

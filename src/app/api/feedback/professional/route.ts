@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server';
 import { withAuthAndDB, errorResponse, successResponse, validateRequestBody } from '@/lib/api/error-handler';
+import type { Session as AuthSession } from 'next-auth';
 import User from '@/lib/models/User';
-import Session from '@/lib/models/Session';
+import Session, { ISession } from '@/lib/models/Session';
 import { ProfessionalFeedback, ReferralEdge } from '@/lib/models/Feedback';
 import Stripe from 'stripe';
 
@@ -30,7 +31,7 @@ interface SubmitFeedbackRequest {
  * POST /api/feedback/professional
  * Submit professional feedback and trigger session fee + referral payouts
  */
-export const POST = withAuthAndDB(async (request: NextRequest, context: any, session: any) => {
+export const POST = withAuthAndDB(async (request: NextRequest, context: Record<string, unknown>, session: AuthSession) => {
   // Validate request body
   const validation = await validateRequestBody<SubmitFeedbackRequest>(request, [
     'sessionId', 'professionalId', 'culturalFitRating', 'interestRating', 
@@ -196,7 +197,7 @@ export const POST = withAuthAndDB(async (request: NextRequest, context: any, ses
  * Calculate referral payouts using the multi-level system
  * 10% for level 1, 1% for level 2, 0.1% for level 3, etc.
  */
-async function calculateReferralPayouts(sessionRecord: any, grossAmount: number) {
+async function calculateReferralPayouts(sessionRecord: ISession, grossAmount: number) {
   const payouts = [];
   
   if (!sessionRecord.referrerProId) {

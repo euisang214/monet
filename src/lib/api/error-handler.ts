@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
+import type { Session } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectDB } from '@/lib/models/db';
 
@@ -9,7 +10,7 @@ export function errorResponse(message: string, status: number = 500) {
 }
 
 // Success response
-export function successResponse(data: any, message?: string) {
+export function successResponse<T>(data: T, message?: string) {
   return NextResponse.json({
     success: true,
     data,
@@ -19,10 +20,10 @@ export function successResponse(data: any, message?: string) {
 
 // Authentication wrapper
 export function withAuth(
-  handler: (request: NextRequest, context: any, session: any) => Promise<NextResponse>,
+  handler: (request: NextRequest, context: Record<string, unknown>, session: Session) => Promise<NextResponse>,
   options: { requireRole?: 'candidate' | 'professional' } = {}
 ) {
-  return async (request: NextRequest, context: any) => {
+  return async (request: NextRequest, context: Record<string, unknown>) => {
     try {
       const session = await getServerSession(authOptions);
       
@@ -44,9 +45,9 @@ export function withAuth(
 
 // Database connection wrapper
 export function withDB(
-  handler: (request: NextRequest, context: any) => Promise<NextResponse>
+  handler: (request: NextRequest, context: Record<string, unknown>) => Promise<NextResponse>
 ) {
-  return async (request: NextRequest, context: any) => {
+  return async (request: NextRequest, context: Record<string, unknown>) => {
     try {
       await connectDB();
       return await handler(request, context);
@@ -59,7 +60,7 @@ export function withDB(
 
 // Combined wrapper for auth + DB
 export function withAuthAndDB(
-  handler: (request: NextRequest, context: any, session: any) => Promise<NextResponse>,
+  handler: (request: NextRequest, context: Record<string, unknown>, session: Session) => Promise<NextResponse>,
   options: { requireRole?: 'candidate' | 'professional' } = {}
 ) {
   return withDB(withAuth(handler, options));
@@ -67,9 +68,9 @@ export function withAuthAndDB(
 
 // Error handling wrapper
 export function withErrorHandling(
-  handler: (request: NextRequest, context: any) => Promise<NextResponse>
+  handler: (request: NextRequest, context: Record<string, unknown>) => Promise<NextResponse>
 ) {
-  return async (request: NextRequest, context: any) => {
+  return async (request: NextRequest, context: Record<string, unknown>) => {
     try {
       return await handler(request, context);
     } catch (error) {
@@ -108,7 +109,7 @@ export async function validateRequestBody<T>(
     }
     
     return { isValid: true, data: body };
-  } catch (error) {
+  } catch {
     return {
       isValid: false,
       error: 'Invalid JSON body'

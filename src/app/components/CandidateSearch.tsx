@@ -1,8 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import Link from 'next/link';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { formatCurrencyDisplay, apiRequest } from '@/lib/utils';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -32,7 +30,6 @@ interface SearchFilters {
 }
 
 export default function CandidateSearch() {
-  const { data: session } = useSession();
   const { isAuthenticated, isLoading } = useAuthGuard({ 
     requiredRole: 'candidate',
     requireProfileComplete: false // Allow incomplete profiles to browse
@@ -58,9 +55,56 @@ export default function CandidateSearch() {
     }
   }, [isAuthenticated]);
 
+  const filterProfessionals = useCallback(() => {
+    let filtered = professionals;
+
+    // Text search
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        pro =>
+          pro.name.toLowerCase().includes(query) ||
+          pro.title.toLowerCase().includes(query) ||
+          pro.company.toLowerCase().includes(query) ||
+          pro.bio.toLowerCase().includes(query) ||
+          pro.expertise.some(exp => exp.toLowerCase().includes(query))
+      );
+    }
+
+    // Apply filters
+    if (filters.industry) {
+      filtered = filtered.filter(pro =>
+        pro.industry.toLowerCase().includes(filters.industry.toLowerCase())
+      );
+    }
+
+    if (filters.company) {
+      filtered = filtered.filter(pro =>
+        pro.company.toLowerCase().includes(filters.company.toLowerCase())
+      );
+    }
+
+    if (filters.expertise) {
+      filtered = filtered.filter(pro =>
+        pro.expertise.some(exp =>
+          exp.toLowerCase().includes(filters.expertise.toLowerCase())
+        )
+      );
+    }
+
+    // Rate and experience filters
+    filtered = filtered.filter(
+      pro =>
+        pro.sessionRateCents <= filters.maxRate * 100 &&
+        pro.yearsExperience >= filters.minExperience
+    );
+
+    setFilteredProfessionals(filtered);
+  }, [professionals, searchQuery, filters]);
+
   useEffect(() => {
     filterProfessionals();
-  }, [professionals, searchQuery, filters]);
+  }, [filterProfessionals]);
 
   const fetchProfessionals = async () => {
     try {
@@ -75,50 +119,6 @@ export default function CandidateSearch() {
     }
   };
 
-  const filterProfessionals = () => {
-    let filtered = professionals;
-
-    // Text search
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(pro => 
-        pro.name.toLowerCase().includes(query) ||
-        pro.title.toLowerCase().includes(query) ||
-        pro.company.toLowerCase().includes(query) ||
-        pro.bio.toLowerCase().includes(query) ||
-        pro.expertise.some(exp => exp.toLowerCase().includes(query))
-      );
-    }
-
-    // Apply filters
-    if (filters.industry) {
-      filtered = filtered.filter(pro => 
-        pro.industry.toLowerCase().includes(filters.industry.toLowerCase())
-      );
-    }
-
-    if (filters.company) {
-      filtered = filtered.filter(pro => 
-        pro.company.toLowerCase().includes(filters.company.toLowerCase())
-      );
-    }
-
-    if (filters.expertise) {
-      filtered = filtered.filter(pro => 
-        pro.expertise.some(exp => 
-          exp.toLowerCase().includes(filters.expertise.toLowerCase())
-        )
-      );
-    }
-
-    // Rate and experience filters
-    filtered = filtered.filter(pro => 
-      pro.sessionRateCents <= filters.maxRate * 100 &&
-      pro.yearsExperience >= filters.minExperience
-    );
-
-    setFilteredProfessionals(filtered);
-  };
 
   const handleBookSession = (professional: Professional) => {
     setSelectedPro(professional);

@@ -129,10 +129,10 @@ export default function SetupPage() {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-bold text-gray-900 mb-2">
-                    I'm a Candidate 🎓
+                    I&apos;m a Candidate 🎓
                   </h3>
                   <p className="text-gray-600 text-sm leading-relaxed">
-                    I'm a student or recent graduate looking to connect with professionals for career advice and opportunities.
+                    I&apos;m a student or recent graduate looking to connect with professionals for career advice and opportunities.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-md">Book coffee chats</span>
@@ -167,10 +167,10 @@ export default function SetupPage() {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-bold text-gray-900 mb-2">
-                    I'm a Professional 💼
+                    I&apos;m a Professional 💼
                   </h3>
                   <p className="text-gray-600 text-sm leading-relaxed">
-                    I'm an experienced professional who wants to mentor candidates and earn money sharing my expertise.
+                    I&apos;m an experienced professional who wants to mentor candidates and earn money sharing my expertise.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-md">Earn per session</span>
@@ -207,7 +207,7 @@ export default function SetupPage() {
               <div>
                 <h4 className="font-semibold text-blue-900 mb-1">Welcome {session?.user?.name}!</h4>
                 <p className="text-sm text-blue-800">
-                  We've pre-filled your profile with information from {session?.user?.email}. 
+                  We&apos;ve pre-filled your profile with information from {session?.user?.email}.
                   You can review and edit this in the next step.
                 </p>
               </div>

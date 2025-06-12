@@ -27,7 +27,7 @@ export const authOptions: NextAuthOptions = {
   ],
   
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account }) {
       if (!user.email) {
         console.error('No email provided by OAuth provider');
         return false;
@@ -74,7 +74,7 @@ export const authOptions: NextAuthOptions = {
       }
     },
 
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       if (user) {
         await connectDB();
         const dbUser = await User.findOne({ email: user.email });
