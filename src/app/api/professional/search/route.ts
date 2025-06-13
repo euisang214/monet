@@ -19,7 +19,7 @@ export const GET = withDB(async (request: NextRequest) => {
   const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 50;
 
   // Build MongoDB query
-  const mongoQuery: any = {
+  const mongoQuery: Record<string, unknown> = {
     role: 'professional',
     sessionRateCents: { $gt: 0 }, // Only professionals with set rates
   };

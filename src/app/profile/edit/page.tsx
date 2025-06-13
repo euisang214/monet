@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { apiRequest } from '@/lib/utils';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -81,7 +80,6 @@ const PRESET_EXPERTISE = [
 
 export default function ProfileEditPage() {
   const { data: session, status } = useSession();
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [uploadingResume, setUploadingResume] = useState(false);
   const [error, setError] = useState<string>('');
@@ -522,7 +520,7 @@ export default function ProfileEditPage() {
                       />
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      Amount you'll pay to the first professional at a company if you accept an offer there
+                      Amount you&apos;ll pay to the first professional at a company if you accept an offer there
                     </p>
                   </div>
                 </div>
@@ -541,7 +539,7 @@ export default function ProfileEditPage() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      List clubs, organizations, or activities you're involved in
+                      List clubs, organizations, or activities you&apos;re involved in
                     </p>
                   </div>
                 </div>
@@ -699,7 +697,7 @@ export default function ProfileEditPage() {
                       />
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      Most professionals charge $25-100 per session. You'll receive 90% after platform fees.
+                      Most professionals charge $25-100 per session. You&apos;ll receive 90% after platform fees.
                     </p>
                   </div>
                 </div>

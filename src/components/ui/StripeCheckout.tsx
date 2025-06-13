@@ -14,10 +14,21 @@ interface Professional {
   bio: string;
 }
 
+interface SessionSuccessData {
+  sessionId: string;
+  scheduledAt: Date | null;
+  professional: {
+    name: string;
+    title: string;
+    company: string;
+  };
+  zoomJoinUrl?: string;
+}
+
 interface StripeCheckoutProps {
   professional: Professional;
   selectedDateTime: Date | null;
-  onSuccess: (sessionData: any) => void;
+  onSuccess: (sessionData: SessionSuccessData) => void;
   onCancel: () => void;
   onError: (error: string) => void;
 }
@@ -75,7 +86,7 @@ export default function StripeCheckout({
         throw new Error(result.error || 'Failed to create session');
       }
 
-      const { sessionId, paymentIntentClientSecret } = result.data;
+      const { sessionId } = result.data;
 
       // Redirect to Stripe Checkout
       // In a production environment, you'd use Stripe's official Checkout

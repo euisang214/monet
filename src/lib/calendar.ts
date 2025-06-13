@@ -62,31 +62,6 @@ interface CalendarEventResponse {
   }>;
 }
 
-/**
- * Refresh access token using refresh token
- */
-async function refreshAccessToken(refreshToken: string): Promise<string> {
-  const response = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      client_id: process.env.GOOGLE_CLIENT_ID!,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-      refresh_token: refreshToken,
-      grant_type: 'refresh_token',
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(`Failed to refresh Google access token: ${error.error_description || error.error}`);
-  }
-
-  const data = await response.json();
-  return data.access_token;
-}
 
 /**
  * Create a calendar event for a professional session
@@ -305,7 +280,7 @@ export async function getFreeBusyInfo(
   timeMin: Date,
   timeMax: Date,
   calendarIds: string[] = ['primary']
-): Promise<any> {
+): Promise<Record<string, unknown>> {
   const requestBody = {
     timeMin: timeMin.toISOString(),
     timeMax: timeMax.toISOString(),
@@ -343,7 +318,9 @@ export async function getFreeBusyInfo(
  * Helper to check if a time slot conflicts with existing events
  */
 export function hasTimeConflict(
-  freeBusyData: any,
+  freeBusyData: {
+    calendars?: Record<string, { busy: { start: string; end: string }[] }>;
+  },
   proposedStart: Date,
   proposedEnd: Date,
   calendarId: string = 'primary'

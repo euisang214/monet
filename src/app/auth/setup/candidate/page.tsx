@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { apiRequest } from '@/lib/utils';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { uploadFile, validateFile, getFilePreview, cleanupFilePreview } from '@/lib/upload';
+import { uploadFile, validateFile } from '@/lib/upload';
 
 interface CandidateProfile {
   school: string;
@@ -30,10 +30,9 @@ export default function CandidateProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [uploadingResume, setUploadingResume] = useState(false);
-  const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [resumePreview, setResumePreview] = useState<string>('');
   const [error, setError] = useState<string>('');
-  const [formKey, setFormKey] = useState(0); // Key to force form re-render if needed
+  // Key prop removed as rerender logic isn't necessary
   
   const [profile, setProfile] = useState<CandidateProfile>({
     school: '',
@@ -93,7 +92,6 @@ export default function CandidateProfilePage() {
     }
 
     setUploadingResume(true);
-    setResumeFile(file);
     setError('');
 
     try {
@@ -200,7 +198,7 @@ export default function CandidateProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" key={formKey}>
+    <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
       <nav className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -406,7 +404,7 @@ export default function CandidateProfilePage() {
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Amount you'll pay to the first professional at a company if you accept an offer there
+                  Amount you&apos;ll pay to the first professional at a company if you accept an offer there
                 </p>
               </div>
             </div>
@@ -426,7 +424,7 @@ export default function CandidateProfilePage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  List clubs, organizations, or activities you're involved in
+                  List clubs, organizations, or activities you&apos;re involved in
                 </p>
               </div>
             </div>
@@ -465,9 +463,8 @@ export default function CandidateProfilePage() {
                         <button
                           type="button"
                           onClick={() => {
-                            updateProfile({ resumeUrl: '' });
-                            setResumePreview('');
-                            setResumeFile(null);
+                              updateProfile({ resumeUrl: '' });
+                              setResumePreview('');
                           }}
                           className="text-sm text-indigo-600 hover:text-indigo-800 mt-1"
                         >
@@ -530,8 +527,8 @@ export default function CandidateProfilePage() {
               <div>
                 <h4 className="font-semibold text-blue-900 mb-1">Next Steps</h4>
                 <p className="text-sm text-blue-800">
-                  Once you complete your profile, you'll be able to search for and book 
-                  coffee chats with professionals in your target industry. Most sessions 
+                  Once you complete your profile, you&apos;ll be able to search for and book
+                  coffee chats with professionals in your target industry. Most sessions
                   are 30 minutes and range from $25-100.
                 </p>
               </div>

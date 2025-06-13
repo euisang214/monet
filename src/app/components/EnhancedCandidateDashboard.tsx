@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import Link from 'next/link';
 import { formatDate, formatTime, getAvatarGradient, apiRequest } from '@/lib/utils';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Modal from '@/components/ui/Modal';
@@ -66,15 +65,73 @@ export default function EnhancedCandidateDashboard() {
     minExperience: 0
   });
 
-  useEffect(() => {
-    if (session?.user?.id) {
-      fetchDashboardData();
+  const fetchDashboardData = useCallback(async () => {
+    if (!session?.user?.id) return;
+
+    try {
+      // Fetch upcoming sessions
+      const sessionsResult = await apiRequest(`/api/sessions/candidate/${session.user.id}`);
+      if (sessionsResult.success) {
+        setUpcomingSessions(sessionsResult.data?.upcoming || []);
+      }
+
+      // Fetch available professionals
+      const prosResult = await apiRequest('/api/professional/search');
+      if (prosResult.success) {
+        setProfessionals(prosResult.data?.professionals || []);
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
     }
   }, [session]);
 
   useEffect(() => {
-    filterProfessionals();
+    if (session?.user?.id) {
+      fetchDashboardData();
+    }
+  }, [session, fetchDashboardData]);
+
+  const filterProfessionals = useCallback(() => {
+    let filtered = professionals;
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        pro =>
+          pro.name.toLowerCase().includes(query) ||
+          pro.title.toLowerCase().includes(query) ||
+          pro.company.toLowerCase().includes(query) ||
+          pro.bio.toLowerCase().includes(query) ||
+          pro.expertise.some(exp => exp.toLowerCase().includes(query))
+      );
+    }
+
+    if (filters.industry) {
+      filtered = filtered.filter(pro =>
+        pro.industry.toLowerCase().includes(filters.industry.toLowerCase())
+      );
+    }
+
+    if (filters.company) {
+      filtered = filtered.filter(pro =>
+        pro.company.toLowerCase().includes(filters.company.toLowerCase())
+      );
+    }
+
+    filtered = filtered.filter(
+      pro =>
+        pro.sessionRateCents <= filters.maxRate * 100 &&
+        pro.yearsExperience >= filters.minExperience
+    );
+
+    setFilteredProfessionals(filtered);
   }, [professionals, searchQuery, filters]);
+
+  useEffect(() => {
+    filterProfessionals();
+  }, [filterProfessionals]);
 
   // Add these state variables after the existing useState declarations (around line 45)
   const [selectedDateTime, setSelectedDateTime] = useState<Date | null>(null);
@@ -166,41 +223,6 @@ export default function EnhancedCandidateDashboard() {
     }
   };
 
-  const filterProfessionals = () => {
-    let filtered = professionals;
-
-    // Text search
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(pro => 
-        pro.name.toLowerCase().includes(query) ||
-        pro.title.toLowerCase().includes(query) ||
-        pro.company.toLowerCase().includes(query) ||
-        pro.bio.toLowerCase().includes(query) ||
-        pro.expertise.some(exp => exp.toLowerCase().includes(query))
-      );
-    }
-
-    // Apply filters
-    if (filters.industry) {
-      filtered = filtered.filter(pro => 
-        pro.industry.toLowerCase().includes(filters.industry.toLowerCase())
-      );
-    }
-
-    if (filters.company) {
-      filtered = filtered.filter(pro => 
-        pro.company.toLowerCase().includes(filters.company.toLowerCase())
-      );
-    }
-
-    filtered = filtered.filter(pro => 
-      pro.sessionRateCents <= filters.maxRate * 100 &&
-      pro.yearsExperience >= filters.minExperience
-    );
-
-    setFilteredProfessionals(filtered);
-  };
 
   const handleViewProfile = (professional: Professional) => {
     setSelectedPro(professional);
@@ -443,11 +465,13 @@ export default function EnhancedCandidateDashboard() {
               >
                 Close
               </button>
-              <button
-                onClick={() => {
-                  setShowProfileModal(false);
-                  selectedPro && handleRequestChat(selectedPro);
-                }}
+                <button
+                  onClick={() => {
+                    setShowProfileModal(false);
+                    if (selectedPro) {
+                      handleRequestChat(selectedPro);
+                    }
+                  }}
                 className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold transition-colors"
               >
                 Request Chat

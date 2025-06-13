@@ -65,7 +65,7 @@ export default function ProfessionalProfilePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [newExpertise, setNewExpertise] = useState('');
-  const [formKey, setFormKey] = useState(0); // Key to force form re-render if needed
+    // Key prop removed; form does not require forced rerender
   
   const [profile, setProfile] = useState<ProfessionalProfile>({
     title: '',
@@ -245,7 +245,7 @@ export default function ProfessionalProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" key={formKey}>
+    <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
       <nav className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -422,7 +422,7 @@ export default function ProfessionalProfilePage() {
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Most professionals charge $25-100 per session. You'll receive 90% after platform fees.
+                  Most professionals charge $25-100 per session. You&apos;ll receive 90% after platform fees.
                 </p>
               </div>
             </div>
@@ -541,7 +541,7 @@ export default function ProfessionalProfilePage() {
               {loading ? 'Setting up your account...' : 'Complete Profile & Start Earning'}
             </button>
             <p className="text-xs text-gray-500 mt-2 text-center">
-              You'll be redirected to Stripe to set up payments after completing your profile
+              You&apos;ll be redirected to Stripe to set up payments after completing your profile
             </p>
           </div>
         </div>
@@ -554,7 +554,7 @@ export default function ProfessionalProfilePage() {
               <div>
                 <h4 className="font-semibold text-green-900 mb-1">Start Earning Immediately</h4>
                 <p className="text-sm text-green-800">
-                  Once you complete your profile, you'll receive payments instantly after each session. 
+                  Once you complete your profile, you&apos;ll receive payments instantly after each session.
                   You can also earn referral bonuses by referring candidates to other professionals.
                 </p>
               </div>

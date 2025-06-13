@@ -29,7 +29,7 @@ interface AcceptOfferRequest {
  * POST /api/offers
  * Report a new job offer
  */
-export const POST = withAuthAndDB(async (request: NextRequest, context: any, session: any) => {
+export const POST = withAuthAndDB(async (request: NextRequest) => {
   // Validate request body
   const validation = await validateRequestBody<CreateOfferRequest>(request, [
     'candidateId', 'firmId', 'position', 'reportedBy'
@@ -93,7 +93,7 @@ export const POST = withAuthAndDB(async (request: NextRequest, context: any, ses
  * PUT /api/offers
  * Accept/confirm an offer and trigger bonus payout
  */
-export const PUT = withAuthAndDB(async (request: NextRequest, context: any, session: any) => {
+export const PUT = withAuthAndDB(async (request: NextRequest) => {
   // Validate request body
   const validation = await validateRequestBody<AcceptOfferRequest>(request, [
     'offerId', 'candidateId'
@@ -175,7 +175,7 @@ export const PUT = withAuthAndDB(async (request: NextRequest, context: any, sess
  * GET /api/offers?candidateId=xxx or GET /api/offers?professionalId=xxx
  * Get offers for a candidate or professional
  */
-export const GET = withAuthAndDB(async (request: NextRequest, context: any, session: any) => {
+export const GET = withAuthAndDB(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
   const candidateId = searchParams.get('candidateId');
   const professionalId = searchParams.get('professionalId');
@@ -184,7 +184,7 @@ export const GET = withAuthAndDB(async (request: NextRequest, context: any, sess
     return errorResponse('Either candidateId or professionalId is required', 400);
   }
 
-  let query: any = {};
+  const query: Record<string, string> = {};
   
   if (candidateId) {
     query.candidateId = candidateId;

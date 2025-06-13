@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { withAuth, errorResponse, successResponse, validateRequestBody } from '@/lib/api/error-handler';
+import type { Session } from 'next-auth';
 import { connectDB } from '@/lib/models/db';
 import User from '@/lib/models/User';
 
@@ -12,7 +13,7 @@ interface SwitchRoleRequest {
  * POST /api/profile/switch-role
  * Switch user role between candidate and professional
  */
-export const POST = withAuth(async (request: NextRequest, context: any, session: any) => {
+export const POST = withAuth(async (request: NextRequest, context: Record<string, unknown>, session: Session) => {
   await connectDB();
   
   // Validate request body
@@ -82,7 +83,7 @@ export const POST = withAuth(async (request: NextRequest, context: any, session:
  * GET /api/profile/switch-role
  * Get role switching information for the current user
  */
-export const GET = withAuth(async (request: NextRequest, context: any, session: any) => {
+export const GET = withAuth(async (request: NextRequest, context: Record<string, unknown>, session: Session) => {
   await connectDB();
   
   const userId = session.user.id;

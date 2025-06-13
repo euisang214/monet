@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import Link from 'next/link';
-import { formatDate, formatTime, formatLongDate, getAvatarGradient, apiRequest } from '@/lib/utils';
+import { formatDate, formatLongDate, getAvatarGradient, apiRequest } from '@/lib/utils';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Modal from '@/components/ui/Modal';
 import Navigation from '@/components/ui/Navigation';
@@ -544,9 +543,9 @@ export default function EnhancedProDashboard() {
                 <label className="block text-lg font-bold text-gray-900 mb-2">
                   Written Feedback
                 </label>
-                <p className="text-sm text-gray-600 mb-3">
-                  Share your thoughts about the candidate's fit, skills, and potential (minimum 20 characters)
-                </p>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Share your thoughts about the candidate&apos;s fit, skills, and potential (minimum 20 characters)
+                  </p>
                 <textarea
                   value={feedbackForm.feedback}
                   onChange={(e) => setFeedbackForm(prev => ({ ...prev, feedback: e.target.value }))}

@@ -3,7 +3,8 @@ import { withAuthAndDB, errorResponse, successResponse, validateRequestBody } fr
 import Session from '@/lib/models/Session';
 import User from '@/lib/models/User';
 import { createZoomMeeting, deleteZoomMeeting } from '@/lib/zoom';
-import { createCalendarEvent, deleteCalendarEvent } from '@/lib/calendar';
+import { createCalendarEvent } from '@/lib/calendar';
+import type { Session as AuthSession } from 'next-auth';
 
 interface ConfirmSessionRequest {
   professionalId: string;
@@ -16,7 +17,7 @@ interface ConfirmSessionRequest {
  * POST /api/sessions/[id]/confirm
  * Professional accepts or declines a session request
  */
-export const POST = withAuthAndDB(async (request: NextRequest, { params }: { params: { id: string } }, session: any) => {
+export const POST = withAuthAndDB(async (request: NextRequest, { params }: { params: { id: string } }, session: AuthSession) => {
   const { id: sessionId } = await params;
   
   // Validate request body
@@ -198,7 +199,7 @@ export const POST = withAuthAndDB(async (request: NextRequest, { params }: { par
  * GET /api/sessions/[id]/confirm
  * Get session details for confirmation
  */
-export const GET = withAuthAndDB(async (request: NextRequest, { params }: { params: { id: string } }, session: any) => {
+export const GET = withAuthAndDB(async (request: NextRequest, { params }: { params: { id: string } }, session: AuthSession) => {
   const { id: sessionId } = await params;
   const { searchParams } = new URL(request.url);
   const professionalId = searchParams.get('professionalId');

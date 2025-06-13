@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { withAuthAndDB, errorResponse, successResponse } from '@/lib/api/error-handler';
 import Session from '@/lib/models/Session';
+import type { Session as AuthSession } from 'next-auth';
 
 /**
  * GET /api/sessions/candidate/[id]
@@ -9,7 +10,7 @@ import Session from '@/lib/models/Session';
 export const GET = withAuthAndDB(async (
   request: NextRequest,
   { params }: { params: { id: string } },
-  session: any
+  session: AuthSession
 ) => {
   const { id: candidateId } = await params;
 

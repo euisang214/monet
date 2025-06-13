@@ -1,6 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
+import type { Session } from 'next-auth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
@@ -19,7 +20,7 @@ interface AuthGuardReturn {
   isLoading: boolean;
   isAuthenticated: boolean;
   hasCorrectRole: boolean;
-  user: any;
+  user: Session['user'] | undefined;
 }
 
 export function useAuthGuard(options: AuthGuardOptions = {}): AuthGuardReturn {

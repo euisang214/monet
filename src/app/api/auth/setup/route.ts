@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { withAuth, errorResponse, successResponse, validateRequestBody } from '@/lib/api/error-handler';
+import type { Session } from 'next-auth';
 import { connectDB } from '@/lib/models/db';
 import User from '@/lib/models/User';
 
@@ -12,7 +13,7 @@ interface SetupRequest {
  * POST /api/auth/setup
  * Set user role after OAuth authentication
  */
-export const POST = withAuth(async (request: NextRequest, context: any, session: any) => {
+export const POST = withAuth(async (request: NextRequest, context: Record<string, unknown>, session: Session) => {
   await connectDB();
   
   // Validate request body

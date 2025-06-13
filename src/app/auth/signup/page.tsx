@@ -25,7 +25,7 @@ export default function SignUpPage() {
             Redirecting to Sign In
           </h1>
           <p className="text-gray-600 mb-6">
-            We've streamlined our signup process. You'll sign in with Google or LinkedIn and then choose your account type.
+            We&apos;ve streamlined our signup process. You&apos;ll sign in with Google or LinkedIn and then choose your account type.
           </p>
           <Link 
             href="/auth/signin"

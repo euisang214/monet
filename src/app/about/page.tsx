@@ -31,9 +31,9 @@ export default function AboutPage() {
           </div>
         </div>
 
-        {/* The Problem We're Solving */}
+        {/* The Problem We&apos;re Solving */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">The Problem We're Solving</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">The Problem We&apos;re Solving</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div className="flex items-start space-x-3">
@@ -96,7 +96,7 @@ export default function AboutPage() {
               <div className="hidden md:block text-purple-400">→</div>
               <div className="bg-blue-50 rounded-lg p-6 flex-1 max-w-sm">
                 <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold mb-3">4</div>
-                <p className="text-gray-700">Tap into a powerful referral network — professionals can refer you internally, expanding access to roles that often aren't posted publicly.</p>
+                <p className="text-gray-700">Tap into a powerful referral network — professionals can refer you internally, expanding access to roles that often aren&apos;t posted publicly.</p>
               </div>
             </div>
           </div>
@@ -115,7 +115,7 @@ export default function AboutPage() {
               We created Monet because we experienced firsthand how challenging it is to break into competitive industries without the right network. Only a few years ago, we were candidates navigating internship and full-time recruiting ourselves — and we saw how a single conversation with the right person could change everything.
             </p>
             <p>
-              Now, as professionals on the other side of the table, we've seen the inefficiencies from both angles: unstructured outreach, overwhelmed professionals, and missed opportunities on all sides.
+              Now, as professionals on the other side of the table, we&apos;ve seen the inefficiencies from both angles: unstructured outreach, overwhelmed professionals, and missed opportunities on all sides.
             </p>
             <p>
               Monet is our solution — a platform designed to make career-building conversations more accessible, more effective, and more rewarding for everyone involved.
