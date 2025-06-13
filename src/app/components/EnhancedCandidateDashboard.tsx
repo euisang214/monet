@@ -201,29 +201,6 @@ export default function EnhancedCandidateDashboard() {
     return options;
   };
 
-  const fetchDashboardData = async () => {
-    if (!session?.user?.id) return;
-    
-    try {
-      // Fetch upcoming sessions
-      const sessionsResult = await apiRequest(`/api/sessions/candidate/${session.user.id}`);
-      if (sessionsResult.success) {
-        setUpcomingSessions(sessionsResult.data?.upcoming || []);
-      }
-
-      // Fetch available professionals
-      const prosResult = await apiRequest('/api/professional/search');
-      if (prosResult.success) {
-        setProfessionals(prosResult.data?.professionals || []);
-      }
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
   const handleViewProfile = (professional: Professional) => {
     setSelectedPro(professional);
     setShowProfileModal(true);
