@@ -182,6 +182,7 @@ export const POST = withAuth(async (request: NextRequest, context, session: Sess
         type: 'account_onboarding'
       });
 
+      user.profileComplete = true;
       await user.save();
 
       console.log('Professional profile completed:', user._id, 'Stripe account:', stripeAccount.id);
@@ -196,6 +197,7 @@ export const POST = withAuth(async (request: NextRequest, context, session: Sess
     } catch (stripeError) {
       console.error('Stripe account creation failed:', stripeError);
       // Save profile even if Stripe fails - they can set up payments later
+      user.profileComplete = true;
       await user.save();
       
       return successResponse({
@@ -206,6 +208,7 @@ export const POST = withAuth(async (request: NextRequest, context, session: Sess
     }
   }
 
+  user.profileComplete = true;
   await user.save();
 
   console.log(`${role} profile completed:`, user._id);
