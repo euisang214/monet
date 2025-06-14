@@ -1,7 +1,7 @@
 'use client';
 
-import CandidateSearch from '@/app/components/CandidateSearch';
+import ProfessionalDirectory from '@/app/components/ProfessionalDirectory';
 
 export default function CandidateSearchPage() {
-  return <CandidateSearch />;
+  return <ProfessionalDirectory />;
 }

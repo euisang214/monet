@@ -6,6 +6,7 @@ import { formatDate, formatLongDate, getAvatarGradient, apiRequest } from '@/lib
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Modal from '@/components/ui/Modal';
 import Navigation from '@/components/ui/Navigation';
+import CandidateDirectory from '@/app/components/CandidateDirectory';
 
 interface Session {
   _id: string;
@@ -393,6 +394,9 @@ export default function EnhancedProDashboard() {
                 </div>
               </div>
             </div>
+
+            {/* Candidate Search */}
+            <CandidateDirectory />
 
           </div>
         </div>

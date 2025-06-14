@@ -29,7 +29,7 @@ interface SearchFilters {
   minExperience: number;
 }
 
-export default function CandidateSearch() {
+export default function ProfessionalDirectory() {
   const { isAuthenticated, isLoading } = useAuthGuard({ 
     requiredRole: 'candidate',
     requireProfileComplete: false // Allow incomplete profiles to browse
@@ -53,10 +53,29 @@ export default function CandidateSearch() {
     if (isAuthenticated) {
       fetchProfessionals();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchProfessionals]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchProfessionals();
+    }
+  }, [filters, searchQuery, isAuthenticated, fetchProfessionals]);
 
   const filterProfessionals = useCallback(() => {
     let filtered = professionals;
+
+    const noFilters =
+      !searchQuery &&
+      !filters.industry &&
+      !filters.company &&
+      !filters.expertise &&
+      filters.maxRate === 1000 &&
+      filters.minExperience === 0;
+
+    if (noFilters) {
+      setFilteredProfessionals(professionals);
+      return;
+    }
 
     // Text search
     if (searchQuery) {
@@ -106,9 +125,18 @@ export default function CandidateSearch() {
     filterProfessionals();
   }, [filterProfessionals]);
 
-  const fetchProfessionals = async () => {
+  const fetchProfessionals = useCallback(async () => {
     try {
-      const result = await apiRequest<{ professionals: Professional[] }>('/api/professional/search');
+      const params = new URLSearchParams();
+      if (searchQuery) params.append('q', searchQuery);
+      if (filters.industry) params.append('industry', filters.industry);
+      if (filters.company) params.append('company', filters.company);
+      if (filters.expertise) params.append('expertise', filters.expertise);
+      if (filters.maxRate) params.append('maxRate', filters.maxRate.toString());
+      if (filters.minExperience) params.append('minExperience', filters.minExperience.toString());
+
+      const url = `/api/professional/search${params.toString() ? `?${params.toString()}` : ''}`;
+      const result = await apiRequest<{ professionals: Professional[] }>(url);
       if (result.success) {
         setProfessionals(result.data?.professionals || []);
       }
@@ -117,7 +145,7 @@ export default function CandidateSearch() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchQuery, filters]);
 
 
   const handleBookSession = (professional: Professional) => {
