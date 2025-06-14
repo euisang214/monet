@@ -19,8 +19,12 @@ export function successResponse<T>(data: T, message?: string) {
 }
 
 // Authentication wrapper
-export function withAuth<T extends Record<string, unknown>>(
-  handler: (request: NextRequest, context: T, session: Session) => Promise<NextResponse>,
+export function withAuth<T = Record<string, unknown>>(
+  handler: (
+    request: NextRequest,
+    context: T,
+    session: Session
+  ) => Promise<NextResponse>,
   options: { requireRole?: 'candidate' | 'professional' } = {}
 ) {
   return async (request: NextRequest, context: T) => {

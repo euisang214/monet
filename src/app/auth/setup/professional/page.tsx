@@ -89,14 +89,14 @@ export default function ProfessionalProfilePage() {
     if (!session?.user?.id) return;
 
     try {
-      const result = await apiRequest<any>(
+      const result = await apiRequest<Partial<ProfessionalProfile>>(
         `/api/auth/profile/${session.user.id}`
       );
       if (result.success && result.data) {
         setProfile(prev => ({
           ...prev,
-          ...(result.data as Partial<ProfessionalProfile>),
-          expertise: (result.data as any).expertise || []
+          ...(result.data as Partial<ProfessionalProfile> & { expertise?: string[] }),
+          expertise: (result.data as Partial<ProfessionalProfile> & { expertise?: string[] }).expertise || []
         }));
       }
     } catch (error) {

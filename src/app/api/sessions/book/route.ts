@@ -26,7 +26,11 @@ interface BookSessionRequest {
  * POST /api/sessions/book
  * Books a session and creates Stripe PaymentIntent
  */
-export const POST = withAuthAndDB(async (request: NextRequest, context: Record<string, unknown>, session: AuthSession) => {
+export const POST = withAuthAndDB(async (
+  request: NextRequest,
+  _context: unknown,
+  session: AuthSession
+) => {
   // Validate request body
   const validation = await validateRequestBody<BookSessionRequest>(request, [
     'candidateId', 'professionalId', 'scheduledAt'
