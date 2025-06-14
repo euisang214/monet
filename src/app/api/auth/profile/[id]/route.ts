@@ -14,7 +14,7 @@ export const GET = withAuth(async (
   session: Session
 ) => {
   try {
-    const { id: userId } = context.params;
+    const { id: userId } = await context.params;
 
     await connectDB();
 

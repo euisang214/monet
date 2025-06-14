@@ -7,6 +7,8 @@ import { connectDB } from '@/lib/models/db';
 
 // Standard error response
 export function errorResponse(message: string, status: number = 500) {
+    // Log the error message with status for visibility during development
+  console.error(`Error ${status}: ${message}`);
   return NextResponse.json({ error: message }, { status });
 }
 
