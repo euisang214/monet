@@ -49,9 +49,9 @@ export const GET = withDB(async (request: NextRequest) => {
   }
 
   if (maxRate) {
-    mongoQuery.sessionRateCents = { 
-      ...mongoQuery.sessionRateCents,
-      $lte: maxRate 
+    mongoQuery.sessionRateCents = {
+      ...(typeof mongoQuery.sessionRateCents === 'object' ? mongoQuery.sessionRateCents as Record<string, unknown> : {}),
+      $lte: maxRate
     };
   }
 

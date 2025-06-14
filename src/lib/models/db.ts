@@ -13,17 +13,18 @@ interface MongooseCache {
   promise: Promise<typeof mongoose> | null;
 }
 
-let cached = (global as { mongoose?: MongooseCache }).mongoose;
+let cached: MongooseCache = (global as { mongoose?: MongooseCache }).mongoose as MongooseCache;
 
 if (!cached) {
-  cached = (global as { mongoose?: MongooseCache }).mongoose = { conn: null, promise: null };
+  cached = { conn: null, promise: null };
+  (global as { mongoose?: MongooseCache }).mongoose = cached;
 }
 
 /**
  * Connects to MongoDB Atlas and returns the mongoose connection
  * Uses connection pooling and caching for optimal performance
  */
-export async function connectDB() {
+export async function connectDB(): Promise<typeof mongoose> {
   if (cached.conn) {
     return cached.conn;
   }

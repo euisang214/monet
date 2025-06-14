@@ -105,19 +105,20 @@ export default function ProfileEditPage() {
     if (!session?.user?.id) return;
 
     try {
-      const result = await apiRequest(`/api/auth/profile/${session.user.id}`);
-      if (result.success) {
+      const result = await apiRequest<ProfileData>(
+        `/api/auth/profile/${session.user.id}`
+      );
+      if (result.success && result.data) {
+        const data = result.data;
         setProfile(prev => ({
           ...prev,
-          name: session.user.name || '',
-          email: session.user.email || '',
-          ...result.data,
-          expertise: result.data.expertise || []
+          ...data,
+          expertise: data.expertise || []
         }));
         
         // Set resume preview if resume exists
-        if (result.data.resumeUrl) {
-          const fileName = result.data.resumeUrl.split('/').pop() || 'Resume uploaded';
+        if (data.resumeUrl) {
+          const fileName = data.resumeUrl.split('/').pop() || 'Resume uploaded';
           setResumePreview(fileName);
         }
       }

@@ -6,11 +6,11 @@ import Session from '@/lib/models/Session';
  * GET /api/professional/[id]
  * Fetch all sessions for a professional with earnings calculation
  */
-export const GET = withDB(async (
+export const GET = withDB<{ params: { id: string } }>(async (
   request: NextRequest,
   { params }: { params: { id: string } }
 ) => {
-  const { id: professionalId } = await params;
+  const { id: professionalId } = params;
 
   if (!professionalId) {
     return errorResponse('Professional ID is required', 400);

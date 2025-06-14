@@ -108,7 +108,7 @@ export default function CandidateSearch() {
 
   const fetchProfessionals = async () => {
     try {
-      const result = await apiRequest('/api/professional/search');
+      const result = await apiRequest<{ professionals: Professional[] }>('/api/professional/search');
       if (result.success) {
         setProfessionals(result.data?.professionals || []);
       }
