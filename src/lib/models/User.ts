@@ -10,6 +10,10 @@ export interface IUser extends Document {
   role: "candidate" | "professional";
   profileImageUrl?: string;
   googleCalendarToken?: string;
+  /** Whether the user has successfully authenticated via OAuth */
+  authenticated?: boolean;
+  /** Whether the user has completed their onboarding profile */
+  profileComplete?: boolean;
   
   // Verification fields
   schoolEmail?: string;
@@ -57,6 +61,8 @@ const UserSchema = new Schema<IUser>(
     },
     profileImageUrl: { type: String, trim: true },
     googleCalendarToken: { type: String, trim: true },
+    authenticated: { type: Boolean, default: false },
+    profileComplete: { type: Boolean, default: false },
     
     // Verification fields
     schoolEmail: { type: String, trim: true },

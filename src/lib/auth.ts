@@ -43,24 +43,30 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             name: user.name,
             profileImageUrl: user.image,
+            authenticated: true,
+            profileComplete: false,
             // Google Calendar token
             ...(account?.provider === 'google' && account.access_token && {
               googleCalendarToken: account.access_token
             })
           });
-          
+
           await newUser.save();
           console.log('Created new OAuth user:', newUser._id);
         } else {
           // Update existing user with latest profile info
           existingUser.name = user.name || existingUser.name;
           existingUser.profileImageUrl = user.image || existingUser.profileImageUrl;
-          
+
           // Update Google Calendar token if available
           if (account?.provider === 'google' && account.access_token) {
             existingUser.googleCalendarToken = account.access_token;
           }
-          
+
+          existingUser.authenticated = true;
+          existingUser.profileComplete = !!(existingUser.role &&
+            (existingUser.role === 'candidate' ? existingUser.school : existingUser.company));
+
           await existingUser.save();
           console.log('Updated existing OAuth user:', existingUser._id);
         }
@@ -82,8 +88,8 @@ export const authOptions: NextAuthOptions = {
           if (dbUser) {
             token.userId = dbUser._id.toString();
             token.role = dbUser.role;
-            token.profileComplete = !!(dbUser.role && 
-              (dbUser.role === 'candidate' ? dbUser.school : dbUser.company));
+            token.profileComplete = dbUser.profileComplete;
+            token.authenticated = dbUser.authenticated;
           }
         } catch (error) {
           console.error('Error in JWT callback:', error);
@@ -97,6 +103,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.userId as string;
         session.user.role = token.role as string;
         session.user.profileComplete = token.profileComplete as boolean;
+        session.user.authenticated = token.authenticated as boolean;
       }
       return session;
     }
@@ -124,6 +131,7 @@ declare module 'next-auth' {
       image?: string | null;
       role?: string;
       profileComplete?: boolean;
+      authenticated?: boolean;
     };
   }
 
@@ -138,5 +146,6 @@ declare module 'next-auth/jwt' {
     userId?: string;
     role?: string;
     profileComplete?: boolean;
+    authenticated?: boolean;
   }
 }
