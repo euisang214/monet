@@ -14,7 +14,7 @@ export default withAuth(
             pathname === '/' || 
             pathname.startsWith('/about') || 
             pathname.startsWith('/how-it-works') ||
-            pathname.startsWith('/api/auth/')) {
+            pathname.startsWith('/api/auth')) {
           return true;
         }
 
