@@ -154,7 +154,11 @@ async function handleTransferCreated(transfer: Stripe.Transfer) {
 
 /**
  * Handle transfer failure - needs manual intervention
+ *
+ * Currently unused but kept for future implementation when
+ * payout retries and recovery workflows are added.
  */
+/*
 async function handleTransferFailed(transfer: Stripe.Transfer) {
   const sessionId = transfer.metadata.sessionId;
   const transferType = transfer.metadata.type;
@@ -164,6 +168,7 @@ async function handleTransferFailed(transfer: Stripe.Transfer) {
   // TODO: Implement retry logic or manual intervention workflow
   // For now, just log the failure for manual review
 }
+*/
 
 /**
  * Handle Stripe account updates (for professional onboarding)

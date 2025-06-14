@@ -37,7 +37,11 @@ interface UpdateProfileRequest {
  * PUT /api/profile/update
  * Update user profile information
  */
-export const PUT = withAuth(async (request: NextRequest, context: Record<string, unknown>, session: Session) => {
+export const PUT = withAuth(async (
+  request: NextRequest,
+  _context: unknown,
+  session: Session
+) => {
   await connectDB();
   
   // Validate request body
