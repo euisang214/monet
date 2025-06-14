@@ -4,11 +4,20 @@ import LinkedInProvider from 'next-auth/providers/linkedin';
 import { connectDB } from '../lib/models/db';
 import User from './models/User';
 
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    console.error(`Missing environment variable ${name}`);
+    throw new Error(`Environment variable ${name} is required`);
+  }
+  return value;
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: requireEnv('GOOGLE_CLIENT_ID'),
+      clientSecret: requireEnv('GOOGLE_CLIENT_SECRET'),
       authorization: {
         params: {
           scope: 'openid email profile https://www.googleapis.com/auth/calendar.events'
@@ -16,8 +25,8 @@ export const authOptions: NextAuthOptions = {
       }
     }),
     LinkedInProvider({
-      clientId: process.env.LINKEDIN_CLIENT_ID!,
-      clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
+      clientId: requireEnv('LINKEDIN_CLIENT_ID'),
+      clientSecret: requireEnv('LINKEDIN_CLIENT_SECRET'),
       authorization: {
         params: {
           scope: 'r_liteprofile r_emailaddress'
