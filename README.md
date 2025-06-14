@@ -62,6 +62,10 @@ NEXTAUTH_SECRET=your-secret-key
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 
+# LinkedIn OAuth
+LINKEDIN_CLIENT_ID=your-linkedin-client-id
+LINKEDIN_CLIENT_SECRET=your-linkedin-client-secret
+
 # AWS Configuration
 AWS_REGION=us-east-1
 AWS_ACCESS_KEY_ID=your-access-key-id
