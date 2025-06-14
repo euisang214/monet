@@ -1,23 +1,13 @@
 import { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import LinkedInProvider from 'next-auth/providers/linkedin';
-import { connectDB } from '../lib/models/db';
-import User from './models/User';
-
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    console.error(`Missing environment variable ${name}`);
-    throw new Error(`Environment variable ${name} is required`);
-  }
-  return value;
-}
+import { connectDB } from '@/lib/models/db';
 
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
-      clientId: requireEnv('GOOGLE_CLIENT_ID'),
-      clientSecret: requireEnv('GOOGLE_CLIENT_SECRET'),
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
           scope: 'openid email profile https://www.googleapis.com/auth/calendar.events'
@@ -25,43 +15,42 @@ export const authOptions: NextAuthOptions = {
       }
     }),
     LinkedInProvider({
-      clientId: requireEnv('LINKEDIN_CLIENT_ID'),
-      clientSecret: requireEnv('LINKEDIN_CLIENT_SECRET'),
+      clientId: process.env.LINKEDIN_CLIENT_ID!,
+      clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
       authorization: {
         params: {
-          scope: 'r_liteprofile r_emailaddress'
+          scope: 'openid profile email'
         }
       }
     })
   ],
-  
-  callbacks: {
-    async signIn({ user, account }) {
-      if (!user.email) {
-        console.error('No email provided by OAuth provider');
-        return false;
-      }
 
+  callbacks: {
+    async signIn({ user, account, profile }) {
       try {
+        console.log('OAuth sign in attempt:', { user: user.email, provider: account?.provider });
+        
         await connectDB();
         
-        // Check if user exists
-        let existingUser = await User.findOne({ email: user.email });
+        // Import User model only when needed to avoid compilation issues
+        const { default: User } = await import('@/lib/models/User');
+        
+        const existingUser = await User.findOne({ email: user.email });
         
         if (!existingUser) {
-          // Create new user without role - they'll set it in setup
-          existingUser = new User({
+          // Create new user
+          const newUser = new User({
             email: user.email,
-            name: user.name || 'Unknown User',
+            name: user.name,
             profileImageUrl: user.image,
-            // Store OAuth tokens for calendar integration
+            // Google Calendar token
             ...(account?.provider === 'google' && account.access_token && {
               googleCalendarToken: account.access_token
             })
           });
           
-          await existingUser.save();
-          console.log('Created new OAuth user:', existingUser._id);
+          await newUser.save();
+          console.log('Created new OAuth user:', newUser._id);
         } else {
           // Update existing user with latest profile info
           existingUser.name = user.name || existingUser.name;
@@ -85,13 +74,19 @@ export const authOptions: NextAuthOptions = {
 
     async jwt({ token, user }) {
       if (user) {
-        await connectDB();
-        const dbUser = await User.findOne({ email: user.email });
-        if (dbUser) {
-          token.userId = dbUser._id.toString();
-          token.role = dbUser.role;
-          token.profileComplete = !!(dbUser.role && 
-            (dbUser.role === 'candidate' ? dbUser.school : dbUser.company));
+        try {
+          await connectDB();
+          const { default: User } = await import('@/lib/models/User');
+          
+          const dbUser = await User.findOne({ email: user.email });
+          if (dbUser) {
+            token.userId = dbUser._id.toString();
+            token.role = dbUser.role;
+            token.profileComplete = !!(dbUser.role && 
+              (dbUser.role === 'candidate' ? dbUser.school : dbUser.company));
+          }
+        } catch (error) {
+          console.error('Error in JWT callback:', error);
         }
       }
       return token;
