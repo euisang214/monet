@@ -6,13 +6,13 @@ import Session, { ISession } from '@/lib/models/Session';
 import { ProfessionalFeedback, ReferralEdge } from '@/lib/models/Feedback';
 import Stripe from 'stripe';
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY environment variable is required');
+function getStripe() {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) {
+    throw new Error('STRIPE_SECRET_KEY environment variable is required');
+  }
+  return new Stripe(key, { apiVersion: '2023-10-16' });
 }
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2023-10-16'
-});
 
 // Platform fee percentage (e.g., 5% = 0.05)
 const PLATFORM_FEE_RATE = 0.05;
@@ -34,7 +34,7 @@ interface SubmitFeedbackRequest {
 export const POST = withAuthAndDB(async (request: NextRequest, context, session: AuthSession) => {
   // Validate request body
   const validation = await validateRequestBody<SubmitFeedbackRequest>(request, [
-    'sessionId', 'professionalId', 'culturalFitRating', 'interestRating', 
+    'sessionId', 'professionalId', 'culturalFitRating', 'interestRating',
     'technicalRating', 'feedback'
   ]);
   
@@ -51,6 +51,8 @@ export const POST = withAuthAndDB(async (request: NextRequest, context, session:
     feedback,
     internalNotes
   } = validation.data!;
+
+  const stripe = getStripe();
 
   // Validate ratings
   const ratings = [culturalFitRating, interestRating, technicalRating];
