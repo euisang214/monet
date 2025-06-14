@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useAuthGuard } from '@/hooks/useAuthGuard';
@@ -23,14 +23,15 @@ export default function SetupPage() {
   });
 
   // Check if user already has a role and redirect accordingly
-  if (session?.user?.role) {
+  useEffect(() => {
+    if (!session?.user?.role) return;
+
     if (session.user.role === 'candidate') {
-      router.push('/candidate/dashboard');
+      router.replace('/candidate/dashboard');
     } else if (session.user.role === 'professional') {
-      router.push('/professional/dashboard');
+      router.replace('/professional/dashboard');
     }
-    return null;
-  }
+  }, [session?.user?.role, router]);
 
   const handleContinue = async () => {
     if (!selectedRole || !session?.user?.id) return;
