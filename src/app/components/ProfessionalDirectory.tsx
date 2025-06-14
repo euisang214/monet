@@ -30,7 +30,7 @@ interface SearchFilters {
 }
 
 export default function ProfessionalDirectory() {
-  const { isAuthenticated, isLoading } = useAuthGuard({ 
+  const { isAuthenticated, isLoading } = useAuthGuard({
     requiredRole: 'candidate',
     requireProfileComplete: false // Allow incomplete profiles to browse
   });
@@ -48,6 +48,28 @@ export default function ProfessionalDirectory() {
   });
   const [selectedPro, setSelectedPro] = useState<Professional | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
+
+  const fetchProfessionals = useCallback(async () => {
+    try {
+      const params = new URLSearchParams();
+      if (searchQuery) params.append('q', searchQuery);
+      if (filters.industry) params.append('industry', filters.industry);
+      if (filters.company) params.append('company', filters.company);
+      if (filters.expertise) params.append('expertise', filters.expertise);
+      if (filters.maxRate) params.append('maxRate', filters.maxRate.toString());
+      if (filters.minExperience) params.append('minExperience', filters.minExperience.toString());
+
+      const url = `/api/professional/search${params.toString() ? `?${params.toString()}` : ''}`;
+      const result = await apiRequest<{ professionals: Professional[] }>(url);
+      if (result.success) {
+        setProfessionals(result.data?.professionals || []);
+      }
+    } catch (error) {
+      console.error('Error fetching professionals:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchQuery, filters]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -124,28 +146,6 @@ export default function ProfessionalDirectory() {
   useEffect(() => {
     filterProfessionals();
   }, [filterProfessionals]);
-
-  const fetchProfessionals = useCallback(async () => {
-    try {
-      const params = new URLSearchParams();
-      if (searchQuery) params.append('q', searchQuery);
-      if (filters.industry) params.append('industry', filters.industry);
-      if (filters.company) params.append('company', filters.company);
-      if (filters.expertise) params.append('expertise', filters.expertise);
-      if (filters.maxRate) params.append('maxRate', filters.maxRate.toString());
-      if (filters.minExperience) params.append('minExperience', filters.minExperience.toString());
-
-      const url = `/api/professional/search${params.toString() ? `?${params.toString()}` : ''}`;
-      const result = await apiRequest<{ professionals: Professional[] }>(url);
-      if (result.success) {
-        setProfessionals(result.data?.professionals || []);
-      }
-    } catch (error) {
-      console.error('Error fetching professionals:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [searchQuery, filters]);
 
 
   const handleBookSession = (professional: Professional) => {
