@@ -7,7 +7,7 @@ import EnhancedProDashboard from '@/app/components/EnhancedProDashboard';
 export default function ProfessionalDashboardPage() {
   const { isAuthenticated, isLoading } = useAuthGuard({ 
     requiredRole: 'professional',
-    requireProfileComplete: true 
+    requireProfileComplete: false 
   });
 
   if (isLoading) {

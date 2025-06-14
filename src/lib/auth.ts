@@ -26,7 +26,7 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account }) {
       try {
         console.log('OAuth sign in attempt:', { user: user.email, provider: account?.provider });
         

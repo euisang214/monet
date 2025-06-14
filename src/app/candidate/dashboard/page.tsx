@@ -7,7 +7,7 @@ import EnhancedCandidateDashboard from '@/app/components/EnhancedCandidateDashbo
 export default function CandidateDashboardPage() {
   const { isAuthenticated, isLoading } = useAuthGuard({ 
     requiredRole: 'candidate',
-    requireProfileComplete: true 
+    requireProfileComplete: false 
   });
 
   if (isLoading) {

@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import type { Session } from 'next-auth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { log } from 'console';
 
 interface AuthGuardOptions {
   requiredRole?: 'candidate' | 'professional';
@@ -29,7 +30,7 @@ export function useAuthGuard(options: AuthGuardOptions = {}): AuthGuardReturn {
   
   const {
     requiredRole,
-    requireProfileComplete = true,
+    requireProfileComplete = false, // we don't require users to fully complete their profiles to navigate the website
     redirectTo = {
       noAuth: '/auth/signin',
       noRole: '/auth/setup',
