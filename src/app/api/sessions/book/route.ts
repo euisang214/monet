@@ -5,13 +5,13 @@ import User from '@/lib/models/User';
 import Session from '@/lib/models/Session';
 import Stripe from 'stripe';
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY environment variable is required');
+function getStripe() {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) {
+    throw new Error('STRIPE_SECRET_KEY environment variable is required');
+  }
+  return new Stripe(key, { apiVersion: '2023-10-16' });
 }
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2023-10-16'
-});
 
 interface BookSessionRequest {
   candidateId: string;
@@ -112,6 +112,7 @@ export const POST = withAuthAndDB(async (request: NextRequest, context: unknown,
   await sessionRecord.save();
 
   // Create Stripe PaymentIntent
+  const stripe = getStripe();
   const paymentIntent = await stripe.paymentIntents.create({
     amount: professional.sessionRateCents,
     currency: 'usd',
