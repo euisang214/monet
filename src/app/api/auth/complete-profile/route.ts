@@ -5,9 +5,13 @@ import { connectDB } from '@/lib/models/db';
 import User from '@/lib/models/User';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16'
-});
+function getStripe() {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) {
+    throw new Error('STRIPE_SECRET_KEY environment variable is required');
+  }
+  return new Stripe(key, { apiVersion: '2023-10-16' });
+}
 
 interface CompleteProfileRequest {
   userId: string;
@@ -138,6 +142,7 @@ export const POST = withAuth(async (request: NextRequest, context, session: Sess
     }
 
     // Create Stripe Connect account for professional
+    const stripe = getStripe();
     try {
       const stripeAccount = await stripe.accounts.create({
         type: 'express',
