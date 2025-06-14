@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+type RouteContext = unknown;
 import { getServerSession } from 'next-auth/next';
 import type { Session } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -19,11 +20,11 @@ export function successResponse<T>(data: T, message?: string) {
 }
 
 // Authentication wrapper
-export function withAuth<T extends Record<string, unknown>>(
-  handler: (request: NextRequest, context: T, session: Session) => Promise<NextResponse>,
+export function withAuth(
+  handler: (request: NextRequest, context: RouteContext, session: Session) => Promise<NextResponse>,
   options: { requireRole?: 'candidate' | 'professional' } = {}
 ) {
-  return async (request: NextRequest, context: T) => {
+  return async (request: NextRequest, context: RouteContext) => {
     try {
       const session = await getServerSession(authOptions);
       
@@ -44,10 +45,10 @@ export function withAuth<T extends Record<string, unknown>>(
 }
 
 // Database connection wrapper
-export function withDB<T extends Record<string, unknown>>(
-  handler: (request: NextRequest, context: T) => Promise<NextResponse>
+export function withDB(
+  handler: (request: NextRequest, context: RouteContext) => Promise<NextResponse>
 ) {
-  return async (request: NextRequest, context: T) => {
+  return async (request: NextRequest, context: RouteContext) => {
     try {
       await connectDB();
       return await handler(request, context);
@@ -59,18 +60,18 @@ export function withDB<T extends Record<string, unknown>>(
 }
 
 // Combined wrapper for auth + DB
-export function withAuthAndDB<T extends Record<string, unknown>>(
-  handler: (request: NextRequest, context: T, session: Session) => Promise<NextResponse>,
+export function withAuthAndDB(
+  handler: (request: NextRequest, context: RouteContext, session: Session) => Promise<NextResponse>,
   options: { requireRole?: 'candidate' | 'professional' } = {}
 ) {
   return withDB(withAuth(handler, options));
 }
 
 // Error handling wrapper
-export function withErrorHandling<T extends Record<string, unknown>>(
-  handler: (request: NextRequest, context: T) => Promise<NextResponse>
+export function withErrorHandling(
+  handler: (request: NextRequest, context: RouteContext) => Promise<NextResponse>
 ) {
-  return async (request: NextRequest, context: T) => {
+  return async (request: NextRequest, context: RouteContext) => {
     try {
       return await handler(request, context);
     } catch (error) {

@@ -7,12 +7,14 @@ import type { Session as AuthSession } from 'next-auth';
  * GET /api/sessions/candidate/[id]
  * Fetch all sessions for a candidate
  */
-export const GET = withAuthAndDB<{ params: { id: string } }>(async (
+export const GET = withAuthAndDB(async (
   request: NextRequest,
-  { params }: { params: { id: string } },
+  context: unknown,
   session: AuthSession
 ) => {
-  const { id: candidateId } = params;
+  const ctx = context as { params?: Promise<Record<string, string | string[] | undefined>> };
+  const params = ctx.params ? await ctx.params : undefined;
+  const candidateId = (params as Record<string, string | undefined> | undefined)?.id as string;
 
   if (!candidateId) {
     return errorResponse('Candidate ID is required', 400);

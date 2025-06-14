@@ -13,7 +13,7 @@ interface SetupRequest {
  * POST /api/auth/setup
  * Set user role after OAuth authentication
  */
-export const POST = withAuth(async (request: NextRequest, context: Record<string, unknown>, session: Session) => {
+export const POST = withAuth(async (request: NextRequest, context, session: Session) => {
   await connectDB();
   
   // Validate request body

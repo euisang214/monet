@@ -10,10 +10,12 @@ import User from '@/lib/models/User';
  */
 export const GET = withAuth(async (
   request: NextRequest,
-  { params }: { params: { id: string } },
+  context: unknown,
   session: Session
 ) => {
-  const { id: userId } = params;
+  const ctx = context as { params?: Promise<Record<string, string | string[] | undefined>> };
+  const params = ctx.params ? await ctx.params : undefined;
+  const userId = (params as Record<string, string | undefined> | undefined)?.id as string;
 
   await connectDB();
 

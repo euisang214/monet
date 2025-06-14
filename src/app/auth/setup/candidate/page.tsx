@@ -60,7 +60,7 @@ export default function CandidateProfilePage() {
     if (!session?.user?.id) return;
 
     try {
-      const result = await apiRequest<any>(
+      const result = await apiRequest<CandidateProfile>(
         `/api/auth/profile/${session.user.id}`
       );
       if (result.success && result.data) {
