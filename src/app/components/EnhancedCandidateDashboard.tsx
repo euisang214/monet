@@ -70,13 +70,15 @@ export default function EnhancedCandidateDashboard() {
 
     try {
       // Fetch upcoming sessions
-      const sessionsResult = await apiRequest(`/api/sessions/candidate/${session.user.id}`);
+      const sessionsResult = await apiRequest<{ upcoming: Session[] }>(
+        `/api/sessions/candidate/${session.user.id}`
+      );
       if (sessionsResult.success) {
         setUpcomingSessions(sessionsResult.data?.upcoming || []);
       }
 
       // Fetch available professionals
-      const prosResult = await apiRequest('/api/professional/search');
+      const prosResult = await apiRequest<{ professionals: Professional[] }>('/api/professional/search');
       if (prosResult.success) {
         setProfessionals(prosResult.data?.professionals || []);
       }

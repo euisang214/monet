@@ -89,12 +89,14 @@ export default function ProfessionalProfilePage() {
     if (!session?.user?.id) return;
 
     try {
-      const result = await apiRequest(`/api/auth/profile/${session.user.id}`);
+      const result = await apiRequest<any>(
+        `/api/auth/profile/${session.user.id}`
+      );
       if (result.success && result.data) {
         setProfile(prev => ({
           ...prev,
-          ...result.data,
-          expertise: result.data.expertise || []
+          ...(result.data as Partial<ProfessionalProfile>),
+          expertise: (result.data as any).expertise || []
         }));
       }
     } catch (error) {
@@ -194,7 +196,7 @@ export default function ProfessionalProfilePage() {
     try {
       console.log('Submitting professional profile:', { userId: session.user.id, ...profile });
       
-      const result = await apiRequest('/api/auth/complete-profile', {
+      const result = await apiRequest<{ stripeOnboardingUrl?: string }>('/api/auth/complete-profile', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

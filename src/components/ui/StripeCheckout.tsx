@@ -71,22 +71,24 @@ export default function StripeCheckout({
 
     try {
       // Create session and get payment intent
-      const result = await apiRequest('/api/sessions/book', {
-        method: 'POST',
-        body: JSON.stringify({
-          candidateId: session.user.id,
-          professionalId: professional._id,
-          scheduledAt: selectedDateTime.toISOString(),
-          durationMinutes: bookingData.durationMinutes,
-          requestMessage: bookingData.requestMessage.trim()
-        })
-      });
+      const result = await apiRequest<{ sessionId: string }>(
+        '/api/sessions/book', {
+          method: 'POST',
+          body: JSON.stringify({
+            candidateId: session.user.id,
+            professionalId: professional._id,
+            scheduledAt: selectedDateTime.toISOString(),
+            durationMinutes: bookingData.durationMinutes,
+            requestMessage: bookingData.requestMessage.trim()
+          })
+        }
+      );
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to create session');
       }
 
-      const { sessionId } = result.data;
+      const { sessionId } = result.data!;
 
       // Redirect to Stripe Checkout
       // In a production environment, you'd use Stripe's official Checkout
@@ -97,13 +99,15 @@ export default function StripeCheckout({
 
       // In production, this would be handled by Stripe webhooks
       // For development, we'll mark the session as paid immediately
-      const confirmResult = await apiRequest(`/api/sessions/${sessionId}/confirm`, {
-        method: 'POST',
-        body: JSON.stringify({
-          professionalId: professional._id,
-          action: 'accept'
-        })
-      });
+      const confirmResult = await apiRequest<{ zoomMeeting?: { joinUrl: string } }>(
+        `/api/sessions/${sessionId}/confirm`, {
+          method: 'POST',
+          body: JSON.stringify({
+            professionalId: professional._id,
+            action: 'accept'
+          })
+        }
+      );
 
       if (confirmResult.success) {
         onSuccess({

@@ -11,7 +11,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
 }
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-06-20'
+  apiVersion: '2023-10-16'
 });
 
 // Platform fee percentage (e.g., 5% = 0.05)
@@ -197,8 +197,14 @@ export const POST = withAuthAndDB(async (request: NextRequest, context: Record<s
  * Calculate referral payouts using the multi-level system
  * 10% for level 1, 1% for level 2, 0.1% for level 3, etc.
  */
+interface ReferralPayout {
+  referrerProId: string;
+  level: number;
+  bonusCents: number;
+}
+
 async function calculateReferralPayouts(sessionRecord: ISession, grossAmount: number) {
-  const payouts = [];
+  const payouts: ReferralPayout[] = [];
   
   if (!sessionRecord.referrerProId) {
     return payouts;

@@ -5,7 +5,7 @@ import { connectDB } from '@/lib/models/db';
 import Session from '@/lib/models/Session';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20'
+  apiVersion: '2023-10-16'
 });
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
@@ -17,7 +17,7 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text();
-    const headersList = headers();
+    const headersList = await headers();
     const signature = headersList.get('stripe-signature');
 
     if (!signature) {
@@ -51,9 +51,6 @@ export async function POST(request: NextRequest) {
         await handleTransferCreated(event.data.object as Stripe.Transfer);
         break;
 
-      case 'transfer.failed':
-        await handleTransferFailed(event.data.object as Stripe.Transfer);
-        break;
 
       case 'account.updated':
         await handleAccountUpdated(event.data.object as Stripe.Account);

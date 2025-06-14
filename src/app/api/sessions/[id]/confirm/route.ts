@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { withAuthAndDB, errorResponse, successResponse, validateRequestBody } from '@/lib/api/error-handler';
 import Session from '@/lib/models/Session';
 import User from '@/lib/models/User';
@@ -17,8 +17,12 @@ interface ConfirmSessionRequest {
  * POST /api/sessions/[id]/confirm
  * Professional accepts or declines a session request
  */
-export const POST = withAuthAndDB(async (request: NextRequest, { params }: { params: { id: string } }, session: AuthSession) => {
-  const { id: sessionId } = await params;
+export const POST = withAuthAndDB<{ params: { id: string } }>(async (
+  request: NextRequest,
+  { params }: { params: { id: string } },
+  session: AuthSession
+): Promise<NextResponse> => {
+  const { id: sessionId } = params;
   
   // Validate request body
   const validation = await validateRequestBody<ConfirmSessionRequest>(request, [
@@ -193,14 +197,19 @@ export const POST = withAuthAndDB(async (request: NextRequest, { params }: { par
     });
   }
 
+  return errorResponse('Invalid action', 400);
 }, { requireRole: 'professional' });
 
 /**
  * GET /api/sessions/[id]/confirm
  * Get session details for confirmation
  */
-export const GET = withAuthAndDB(async (request: NextRequest, { params }: { params: { id: string } }, session: AuthSession) => {
-  const { id: sessionId } = await params;
+export const GET = withAuthAndDB<{ params: { id: string } }>(async (
+  request: NextRequest,
+  { params }: { params: { id: string } },
+  session: AuthSession
+): Promise<NextResponse> => {
+  const { id: sessionId } = params;
   const { searchParams } = new URL(request.url);
   const professionalId = searchParams.get('professionalId');
 

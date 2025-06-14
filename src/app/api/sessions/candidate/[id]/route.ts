@@ -7,12 +7,12 @@ import type { Session as AuthSession } from 'next-auth';
  * GET /api/sessions/candidate/[id]
  * Fetch all sessions for a candidate
  */
-export const GET = withAuthAndDB(async (
+export const GET = withAuthAndDB<{ params: { id: string } }>(async (
   request: NextRequest,
   { params }: { params: { id: string } },
   session: AuthSession
 ) => {
-  const { id: candidateId } = await params;
+  const { id: candidateId } = params;
 
   if (!candidateId) {
     return errorResponse('Candidate ID is required', 400);

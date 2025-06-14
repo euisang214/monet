@@ -19,11 +19,11 @@ export function successResponse<T>(data: T, message?: string) {
 }
 
 // Authentication wrapper
-export function withAuth(
-  handler: (request: NextRequest, context: Record<string, unknown>, session: Session) => Promise<NextResponse>,
+export function withAuth<T extends Record<string, unknown>>(
+  handler: (request: NextRequest, context: T, session: Session) => Promise<NextResponse>,
   options: { requireRole?: 'candidate' | 'professional' } = {}
 ) {
-  return async (request: NextRequest, context: Record<string, unknown>) => {
+  return async (request: NextRequest, context: T) => {
     try {
       const session = await getServerSession(authOptions);
       
@@ -44,10 +44,10 @@ export function withAuth(
 }
 
 // Database connection wrapper
-export function withDB(
-  handler: (request: NextRequest, context: Record<string, unknown>) => Promise<NextResponse>
+export function withDB<T extends Record<string, unknown>>(
+  handler: (request: NextRequest, context: T) => Promise<NextResponse>
 ) {
-  return async (request: NextRequest, context: Record<string, unknown>) => {
+  return async (request: NextRequest, context: T) => {
     try {
       await connectDB();
       return await handler(request, context);
@@ -59,18 +59,18 @@ export function withDB(
 }
 
 // Combined wrapper for auth + DB
-export function withAuthAndDB(
-  handler: (request: NextRequest, context: Record<string, unknown>, session: Session) => Promise<NextResponse>,
+export function withAuthAndDB<T extends Record<string, unknown>>(
+  handler: (request: NextRequest, context: T, session: Session) => Promise<NextResponse>,
   options: { requireRole?: 'candidate' | 'professional' } = {}
 ) {
   return withDB(withAuth(handler, options));
 }
 
 // Error handling wrapper
-export function withErrorHandling(
-  handler: (request: NextRequest, context: Record<string, unknown>) => Promise<NextResponse>
+export function withErrorHandling<T extends Record<string, unknown>>(
+  handler: (request: NextRequest, context: T) => Promise<NextResponse>
 ) {
-  return async (request: NextRequest, context: Record<string, unknown>) => {
+  return async (request: NextRequest, context: T) => {
     try {
       return await handler(request, context);
     } catch (error) {

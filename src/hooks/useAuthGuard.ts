@@ -41,7 +41,7 @@ export function useAuthGuard(options: AuthGuardOptions = {}): AuthGuardReturn {
   const isLoading = status === 'loading';
   const isAuthenticated = !!session?.user?.id;
   const hasCorrectRole = !requiredRole || session?.user?.role === requiredRole;
-  const hasCompleteProfile = !requireProfileComplete || session?.user?.profileComplete;
+  const hasCompleteProfile = !requireProfileComplete || !!session?.user?.profileComplete;
 
   useEffect(() => {
     if (isLoading) return;

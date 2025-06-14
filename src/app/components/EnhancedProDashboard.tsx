@@ -76,9 +76,13 @@ export default function EnhancedProDashboard() {
     if (!session?.user?.id) return;
 
     try {
-      const result = await apiRequest(`/api/professional/${session.user.id}`);
+      const result = await apiRequest<{
+        upcoming: Session[];
+        completed: Session[];
+        pending: Session[];
+      }>(`/api/professional/${session.user.id}`);
       
-      if (result.success) {
+      if (result.success && result.data) {
         const { upcoming, completed, pending } = result.data;
         
         setUpcomingSessions(upcoming.filter((s: Session) => s.status === 'confirmed'));
@@ -106,13 +110,15 @@ export default function EnhancedProDashboard() {
     if (!session?.user?.id) return;
 
     try {
-      const result = await apiRequest(`/api/sessions/${sessionId}/confirm`, {
-        method: 'POST',
-        body: JSON.stringify({
-          professionalId: session.user.id,
-          action: 'accept'
-        })
-      });
+      const result = await apiRequest<{ message: string }>(
+        `/api/sessions/${sessionId}/confirm`, {
+          method: 'POST',
+          body: JSON.stringify({
+            professionalId: session.user.id,
+            action: 'accept'
+          })
+        }
+      );
 
       if (result.success) {
         await fetchDashboardData();
@@ -128,14 +134,16 @@ export default function EnhancedProDashboard() {
     setSubmittingFeedback(true);
     
     try {
-      const result = await apiRequest('/api/feedback/professional', {
-        method: 'POST',
-        body: JSON.stringify({
-          sessionId,
-          professionalId: session.user.id,
-          ...feedbackForm
-        })
-      });
+      const result = await apiRequest<{ sessionPayout: number }>(
+        '/api/feedback/professional', {
+          method: 'POST',
+          body: JSON.stringify({
+            sessionId,
+            professionalId: session.user.id,
+            ...feedbackForm
+          })
+        }
+      );
       
       if (result.success) {
         await fetchDashboardData();
@@ -147,7 +155,7 @@ export default function EnhancedProDashboard() {
           feedback: '',
           internalNotes: ''
         });
-        alert(`Feedback submitted! You've been paid $${(result.data.sessionPayout / 100).toFixed(2)}`);
+        alert(`Feedback submitted! You've been paid $${(result.data!.sessionPayout / 100).toFixed(2)}`);
       } else {
         alert(result.error || 'Failed to submit feedback');
       }

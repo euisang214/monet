@@ -60,11 +60,13 @@ export default function CandidateProfilePage() {
     if (!session?.user?.id) return;
 
     try {
-      const result = await apiRequest(`/api/auth/profile/${session.user.id}`);
+      const result = await apiRequest<any>(
+        `/api/auth/profile/${session.user.id}`
+      );
       if (result.success && result.data) {
         setProfile(prev => ({
           ...prev,
-          ...result.data
+          ...(result.data as Partial<CandidateProfile>)
         }));
       }
     } catch (error) {

@@ -3,6 +3,19 @@ import { headers } from 'next/headers';
 import { connectDB } from '@/lib/models/db';
 import Session from '@/lib/models/Session';
 
+interface ZoomWebhookPayload {
+  object: {
+    id: string;
+    duration?: number;
+    participant?: { user_name: string };
+    recording_files?: {
+      file_type: string;
+      recording_type: string;
+      download_url: string;
+    }[];
+  };
+}
+
 /**
  * POST /api/webhooks/zoom
  * Handle Zoom webhook events for meeting status updates
@@ -10,7 +23,7 @@ import Session from '@/lib/models/Session';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text();
-    const headersList = headers();
+    const headersList = await headers();
     
     // Verify Zoom webhook signature
     const zoomSignature = headersList.get('authorization');
@@ -72,7 +85,7 @@ export async function POST(request: NextRequest) {
 /**
  * Handle meeting started event
  */
-async function handleMeetingStarted(payload: Record<string, unknown>) {
+async function handleMeetingStarted(payload: ZoomWebhookPayload) {
   const meetingId = payload.object.id;
   
   try {
@@ -95,7 +108,7 @@ async function handleMeetingStarted(payload: Record<string, unknown>) {
 /**
  * Handle meeting ended event
  */
-async function handleMeetingEnded(payload: Record<string, unknown>) {
+async function handleMeetingEnded(payload: ZoomWebhookPayload) {
   const meetingId = payload.object.id;
   const duration = payload.object.duration; // in minutes
   
@@ -128,9 +141,9 @@ async function handleMeetingEnded(payload: Record<string, unknown>) {
 /**
  * Handle participant joined event
  */
-async function handleParticipantJoined(payload: Record<string, unknown>) {
+async function handleParticipantJoined(payload: ZoomWebhookPayload) {
   const meetingId = payload.object.id;
-  const participantName = payload.object.participant.user_name;
+  const participantName = payload.object.participant?.user_name ?? 'Unknown';
   
   console.log('Participant joined:', participantName, 'in meeting:', meetingId);
   
@@ -141,9 +154,9 @@ async function handleParticipantJoined(payload: Record<string, unknown>) {
 /**
  * Handle participant left event
  */
-async function handleParticipantLeft(payload: Record<string, unknown>) {
+async function handleParticipantLeft(payload: ZoomWebhookPayload) {
   const meetingId = payload.object.id;
-  const participantName = payload.object.participant.user_name;
+  const participantName = payload.object.participant?.user_name ?? 'Unknown';
   
   console.log('Participant left:', participantName, 'from meeting:', meetingId);
   
@@ -153,9 +166,9 @@ async function handleParticipantLeft(payload: Record<string, unknown>) {
 /**
  * Handle recording completed event
  */
-async function handleRecordingCompleted(payload: Record<string, unknown>) {
+async function handleRecordingCompleted(payload: ZoomWebhookPayload) {
   const meetingId = payload.object.id;
-  const recordingFiles = payload.object.recording_files;
+  const recordingFiles = payload.object.recording_files ?? [];
   
   try {
     const session = await Session.findOne({ zoomMeetingId: meetingId });
