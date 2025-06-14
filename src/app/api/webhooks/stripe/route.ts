@@ -4,11 +4,21 @@ import Stripe from 'stripe';
 import { connectDB } from '@/lib/models/db';
 import Session from '@/lib/models/Session';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16'
-});
+function getStripe() {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) {
+    throw new Error('STRIPE_SECRET_KEY environment variable is required');
+  }
+  return new Stripe(key, { apiVersion: '2023-10-16' });
+}
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+function getWebhookSecret() {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!secret) {
+    throw new Error('STRIPE_WEBHOOK_SECRET environment variable is required');
+  }
+  return secret;
+}
 
 /**
  * POST /api/webhooks/stripe
@@ -16,6 +26,8 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
  */
 export async function POST(request: NextRequest) {
   try {
+    const stripe = getStripe();
+    const webhookSecret = getWebhookSecret();
     const body = await request.text();
     const headersList = await headers();
     const signature = headersList.get('stripe-signature');

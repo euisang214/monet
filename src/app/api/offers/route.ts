@@ -5,9 +5,13 @@ import Session from '@/lib/models/Session';
 import { Offer } from '@/lib/models/Feedback';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16'
-});
+function getStripe() {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) {
+    throw new Error('STRIPE_SECRET_KEY environment variable is required');
+  }
+  return new Stripe(key, { apiVersion: '2023-10-16' });
+}
 
 const PLATFORM_FEE_RATE = 0.05;
 
@@ -127,9 +131,10 @@ export const PUT = withAuthAndDB(async (request: NextRequest) => {
   // Process bonus payout if there was a first chat professional
   if (offer.firstChatProId && offer.bonusCents > 0) {
     const firstChatPro = await User.findById(offer.firstChatProId);
-    
+
     if (firstChatPro?.stripeAccountId) {
       try {
+        const stripe = getStripe();
         // Calculate payout amount after platform fee
         const platformFee = Math.round(offer.bonusCents * PLATFORM_FEE_RATE);
         const professionalPayout = offer.bonusCents - platformFee;
