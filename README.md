@@ -197,7 +197,7 @@ src/
 │   ├── components/             # React components
 │   │   ├── EnhancedCandidateDashboard.tsx
 │   │   ├── EnhancedProDashboard.tsx
-│   │   ├── CandidateSearch.tsx
+│   │   ├── ProfessionalDirectory.tsx
 │   │   └── ui/                 # Reusable UI components
 │   ├── candidate/              # Candidate pages
 │   │   ├── dashboard/          # Split-pane dashboard with sessions

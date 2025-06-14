@@ -65,6 +65,26 @@ export default function EnhancedCandidateDashboard() {
     minExperience: 0
   });
 
+  const fetchProfessionals = useCallback(async () => {
+    try {
+      const params = new URLSearchParams();
+      if (searchQuery) params.append('q', searchQuery);
+      if (filters.industry) params.append('industry', filters.industry);
+      if (filters.company) params.append('company', filters.company);
+      if (filters.expertise) params.append('expertise', filters.expertise);
+      if (filters.maxRate) params.append('maxRate', filters.maxRate.toString());
+      if (filters.minExperience) params.append('minExperience', filters.minExperience.toString());
+
+      const url = `/api/professional/search${params.toString() ? `?${params.toString()}` : ''}`;
+      const prosResult = await apiRequest<{ professionals: Professional[] }>(url);
+      if (prosResult.success) {
+        setProfessionals(prosResult.data?.professionals || []);
+      }
+    } catch (error) {
+      console.error('Error fetching professionals:', error);
+    }
+  }, [filters, searchQuery]);
+
   const fetchDashboardData = useCallback(async () => {
     if (!session?.user?.id) return;
 
@@ -77,17 +97,13 @@ export default function EnhancedCandidateDashboard() {
         setUpcomingSessions(sessionsResult.data?.upcoming || []);
       }
 
-      // Fetch available professionals
-      const prosResult = await apiRequest<{ professionals: Professional[] }>('/api/professional/search');
-      if (prosResult.success) {
-        setProfessionals(prosResult.data?.professionals || []);
-      }
+      await fetchProfessionals();
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
-  }, [session]);
+  }, [session, fetchProfessionals]);
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -95,8 +111,27 @@ export default function EnhancedCandidateDashboard() {
     }
   }, [session, fetchDashboardData]);
 
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetchProfessionals();
+    }
+  }, [filters, searchQuery, session, fetchProfessionals]);
+
   const filterProfessionals = useCallback(() => {
     let filtered = professionals;
+
+    const noFilters =
+      !searchQuery &&
+      !filters.industry &&
+      !filters.company &&
+      !filters.expertise &&
+      filters.maxRate === 1000 &&
+      filters.minExperience === 0;
+
+    if (noFilters) {
+      setFilteredProfessionals(professionals);
+      return;
+    }
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
