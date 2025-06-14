@@ -21,10 +21,10 @@ export function successResponse<T>(data: T, message?: string) {
 
 // Authentication wrapper
 export function withAuth(
-  handler: (request: NextRequest, context: RouteContext, session: Session) => Promise<NextResponse>,
+  handler: (request: NextRequest, context: { params: any }, session: Session) => Promise<NextResponse>,
   options: { requireRole?: 'candidate' | 'professional' } = {}
 ) {
-  return async (request: NextRequest, context: RouteContext) => {
+  return async (request: NextRequest, context: { params: any }) => {
     try {
       const session = await getServerSession(authOptions);
       
