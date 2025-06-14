@@ -17,12 +17,14 @@ interface ConfirmSessionRequest {
  * POST /api/sessions/[id]/confirm
  * Professional accepts or declines a session request
  */
-export const POST = withAuthAndDB<{ params: { id: string } }>(async (
+export const POST = withAuthAndDB(async (
   request: NextRequest,
-  { params }: { params: { id: string } },
+  context: unknown,
   session: AuthSession
 ): Promise<NextResponse> => {
-  const { id: sessionId } = params;
+  const ctx = context as { params?: Promise<Record<string, string | string[] | undefined>> };
+  const params = ctx.params ? await ctx.params : undefined;
+  const sessionId = (params as Record<string, string | undefined> | undefined)?.id as string;
   
   // Validate request body
   const validation = await validateRequestBody<ConfirmSessionRequest>(request, [
@@ -204,12 +206,14 @@ export const POST = withAuthAndDB<{ params: { id: string } }>(async (
  * GET /api/sessions/[id]/confirm
  * Get session details for confirmation
  */
-export const GET = withAuthAndDB<{ params: { id: string } }>(async (
+export const GET = withAuthAndDB(async (
   request: NextRequest,
-  { params }: { params: { id: string } },
+  context: unknown,
   session: AuthSession
 ): Promise<NextResponse> => {
-  const { id: sessionId } = params;
+  const ctx = context as { params?: Promise<Record<string, string | string[] | undefined>> };
+  const params = ctx.params ? await ctx.params : undefined;
+  const sessionId = (params as Record<string, string | undefined> | undefined)?.id as string;
   const { searchParams } = new URL(request.url);
   const professionalId = searchParams.get('professionalId');
 

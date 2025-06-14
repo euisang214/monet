@@ -41,7 +41,7 @@ interface CompleteProfileRequest {
  * POST /api/auth/complete-profile
  * Complete user profile after role selection
  */
-export const POST = withAuth(async (request: NextRequest, context: Record<string, unknown>, session: Session) => {
+export const POST = withAuth(async (request: NextRequest, context, session: Session) => {
   await connectDB();
   
   // Validate request body

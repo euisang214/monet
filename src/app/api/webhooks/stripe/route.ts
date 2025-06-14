@@ -51,7 +51,6 @@ export async function POST(request: NextRequest) {
         await handleTransferCreated(event.data.object as Stripe.Transfer);
         break;
 
-
       case 'account.updated':
         await handleAccountUpdated(event.data.object as Stripe.Account);
         break;
@@ -150,19 +149,6 @@ async function handleTransferCreated(transfer: Stripe.Transfer) {
   // For session fees, the payout status is already updated in the feedback API
   // For referral bonuses, the ReferralEdge records are already created
   // This webhook mainly serves as a confirmation/audit trail
-}
-
-/**
- * Handle transfer failure - needs manual intervention
- */
-async function handleTransferFailed(transfer: Stripe.Transfer) {
-  const sessionId = transfer.metadata.sessionId;
-  const transferType = transfer.metadata.type;
-
-  console.error(`Transfer failed: ${transfer.id} for session ${sessionId} (${transferType})`);
-
-  // TODO: Implement retry logic or manual intervention workflow
-  // For now, just log the failure for manual review
 }
 
 /**

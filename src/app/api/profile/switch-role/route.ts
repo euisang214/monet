@@ -13,7 +13,7 @@ interface SwitchRoleRequest {
  * POST /api/profile/switch-role
  * Switch user role between candidate and professional
  */
-export const POST = withAuth(async (request: NextRequest, context: Record<string, unknown>, session: Session) => {
+export const POST = withAuth(async (request: NextRequest, context, session: Session) => {
   await connectDB();
   
   // Validate request body
@@ -83,7 +83,7 @@ export const POST = withAuth(async (request: NextRequest, context: Record<string
  * GET /api/profile/switch-role
  * Get role switching information for the current user
  */
-export const GET = withAuth(async (request: NextRequest, context: Record<string, unknown>, session: Session) => {
+export const GET = withAuth(async (request: NextRequest, context, session: Session) => {
   await connectDB();
   
   const userId = session.user.id;

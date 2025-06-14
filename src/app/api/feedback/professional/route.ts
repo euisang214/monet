@@ -31,7 +31,7 @@ interface SubmitFeedbackRequest {
  * POST /api/feedback/professional
  * Submit professional feedback and trigger session fee + referral payouts
  */
-export const POST = withAuthAndDB(async (request: NextRequest, context: Record<string, unknown>, session: AuthSession) => {
+export const POST = withAuthAndDB(async (request: NextRequest, context, session: AuthSession) => {
   // Validate request body
   const validation = await validateRequestBody<SubmitFeedbackRequest>(request, [
     'sessionId', 'professionalId', 'culturalFitRating', 'interestRating', 
