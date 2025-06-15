@@ -34,8 +34,8 @@ export function useAuthGuard(options: AuthGuardOptions = {}): AuthGuardReturn {
     redirectTo = {
       noAuth: '/auth/signin',
       noRole: '/auth/setup',
-      wrongRole: requiredRole === 'candidate' ? '/professional/dashboard' : '/candidate/dashboard',
-      incompleteProfile: requiredRole === 'candidate' ? '/auth/setup/candidate' : '/auth/setup/professional'
+      wrongRole: requiredRole === 'candidate' ? '/professional/dashboard' : '/candidate/dashboard'
+      // incompleteProfile handled dynamically based on current role
     }
   } = options;
 
@@ -67,7 +67,10 @@ export function useAuthGuard(options: AuthGuardOptions = {}): AuthGuardReturn {
 
     // Check profile completion
     if (requireProfileComplete && !hasCompleteProfile) {
-      router.push(redirectTo.incompleteProfile!);
+      const incomplete =
+        redirectTo.incompleteProfile ||
+        `/auth/setup/${session.user?.role ?? 'candidate'}`;
+      router.push(incomplete);
       return;
     }
   }, [
