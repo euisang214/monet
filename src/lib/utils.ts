@@ -249,7 +249,7 @@ export function createDebouncedSearch<T>(
  * Common API fetch wrapper with error handling
  */
 export async function apiRequest<T>(
-  url: string, 
+  url: string,
   options: RequestInit = {}
 ): Promise<{ success: boolean; data?: T; error?: string }> {
   try {
@@ -258,6 +258,7 @@ export async function apiRequest<T>(
         'Content-Type': 'application/json',
         ...options.headers,
       },
+      credentials: 'include',
       ...options,
     });
 
