@@ -10,7 +10,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Navigation from '@/components/ui/Navigation';
 
 export default function SwitchRolePage() {
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [newRole, setNewRole] = useState<'candidate' | 'professional' | ''>('');
@@ -41,6 +41,12 @@ export default function SwitchRolePage() {
       });
       
       if (result.success) {
+        // Update NextAuth session with the new role
+        try {
+          await updateSession({ role: targetRole, profileComplete: false });
+        } catch (err) {
+          console.warn('Failed to update session', err);
+        }
         // Redirect to profile completion for the new role
         router.push(`/auth/setup/${targetRole}`);
       } else {
