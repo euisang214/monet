@@ -43,7 +43,7 @@ export default function ProfessionalDirectory() {
     industry: '',
     company: '',
     expertise: '',
-    maxRate: 1000, // $10.00 max by default
+    maxRate: 10000, // $100.00 max by default
     minExperience: 0
   });
   const [selectedPro, setSelectedPro] = useState<Professional | null>(null);
@@ -63,7 +63,7 @@ export default function ProfessionalDirectory() {
       const result = await apiRequest<{ professionals: Professional[] }>(url);
       if (result.success) {
         setProfessionals(result.data?.professionals || []);
-      }
+      };
     } catch (error) {
       console.error('Error fetching professionals:', error);
     } finally {

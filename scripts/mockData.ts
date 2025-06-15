@@ -102,7 +102,7 @@ export async function loadEnhancedMockData() {
       company: 'Goldman Sachs',
       industry: 'Investment Banking',
       yearsExperience: 8,
-      sessionRateCents: 15000, // $150
+      sessionRateCents: 1500, // $15
       bio: 'VP at Goldman Sachs with 8 years in M&A. Previously worked at Blackstone and graduated from Wharton. I help candidates prepare for banking interviews and understand the industry landscape.',
       expertise: ['Investment Banking', 'M&A', 'Financial Modeling', 'Interview Prep', 'Resume Review'],
       stripeAccountId: 'acct_mock_goldman_vp',
@@ -119,7 +119,7 @@ export async function loadEnhancedMockData() {
       company: 'McKinsey & Company',
       industry: 'Management Consulting',
       yearsExperience: 12,
-      sessionRateCents: 20000, // $200
+      sessionRateCents: 2000, // $20
       bio: 'Associate Partner at McKinsey specializing in financial services and technology. I mentor candidates on case interview prep, consulting careers, and leadership development.',
       expertise: ['Management Consulting', 'Case Interviews', 'Strategy', 'Leadership', 'Financial Services'],
       stripeAccountId: 'acct_mock_mckinsey_ap',
@@ -136,7 +136,7 @@ export async function loadEnhancedMockData() {
       company: 'KKR',
       industry: 'Private Equity',
       yearsExperience: 10,
-      sessionRateCents: 25000, // $250
+      sessionRateCents: 2500, // $25
       bio: 'Principal at KKR focusing on healthcare and technology investments. Former Goldman Sachs banker with extensive experience in LBOs and growth equity.',
       expertise: ['Private Equity', 'LBO Modeling', 'Due Diligence', 'Healthcare', 'Technology'],
       stripeAccountId: 'acct_mock_kkr_principal',
@@ -154,7 +154,7 @@ export async function loadEnhancedMockData() {
       company: 'Bain & Company',
       industry: 'Management Consulting',
       yearsExperience: 7,
-      sessionRateCents: 18000, // $180
+      sessionRateCents: 10000, // $100
       bio: 'Principal at Bain with focus on retail and consumer goods. I help candidates break into consulting and navigate the interview process.',
       expertise: ['Management Consulting', 'Case Interviews', 'Retail Strategy', 'Consumer Goods'],
       stripeAccountId: 'acct_mock_bain_principal',

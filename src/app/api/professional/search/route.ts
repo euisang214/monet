@@ -3,6 +3,7 @@ import { withDB, successResponse } from '@/lib/api/error-handler';
 import User from '@/lib/models/User';
 import { CandidateRating } from '@/lib/models/Feedback';
 import Session from '@/lib/models/Session';
+import { log } from 'console';
 
 /**
  * GET /api/professional/search
@@ -35,7 +36,7 @@ export const GET = withDB(async (request: NextRequest) => {
     ];
   }
 
-  // Apply filters
+  // Apply filters  
   if (industry) {
     mongoQuery.industry = { $regex: industry, $options: 'i' };
   }
@@ -65,6 +66,8 @@ export const GET = withDB(async (request: NextRequest) => {
     .limit(limit)
     .sort({ sessionRateCents: 1 }) // Sort by rate (ascending)
     .lean();
+
+  log(professionals);
 
   // Enrich with ratings and session count
   const enrichedProfessionals = await Promise.all(
