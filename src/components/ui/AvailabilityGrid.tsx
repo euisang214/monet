@@ -1,6 +1,26 @@
 'use client';
 import { useState } from 'react';
 
+import {
+  Calendar,
+  dateFnsLocalizer,
+  Views,
+  SlotInfo,
+  Event,
+} from 'react-big-calendar';
+import {
+  format,
+  parse,
+  startOfWeek,
+  getDay,
+  addDays,
+  setHours,
+  setMinutes,
+  startOfDay,
+} from 'date-fns';
+import { enUS } from 'date-fns/locale';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+
 interface Props {
   startDate: Date;
   days: number;
@@ -8,105 +28,82 @@ interface Props {
   onChange?: (slots: Set<string>) => void;
 }
 
+type AvailabilityEvent = Event & { id: string };
+const locales = {
+  'en-US': enUS,
+};
+const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
+
 export default function AvailabilityGrid({ startDate, days, initialSelected, onChange }: Props) {
-  const [selected, setSelected] = useState<Set<string>>(new Set(initialSelected));
-  const [last, setLast] = useState<string | null>(null);
+  const [currentDate, setCurrentDate] = useState(startDate);
+  const [events, setEvents] = useState<AvailabilityEvent[]>(() => {
+    if (!initialSelected) return [];
+    return Array.from(initialSelected).map((iso) => {
+      const start = new Date(iso);
+      return {
+        id: iso,
+        title: 'Available',
+        start,
+        end: new Date(start.getTime() + 30 * 60000),
+      };
+    });
+  });
 
-  const hours = Array.from({ length: 12 }, (_, i) => i + 8); // 8 AM to 8 PM
+  const minTime = setHours(setMinutes(startOfDay(new Date()), 0), 8);
+  const maxTime = setHours(setMinutes(startOfDay(new Date()), 0), 20);
+  const maxDate = addDays(startDate, days - 1);
 
-  const allSlots = (): string[] => {
-    const slots: string[] = [];
-    for (let d = 0; d < days; d++) {
-      for (const h of hours) {
-        const base = new Date(startDate);
-        base.setDate(base.getDate() + d);
-        base.setHours(h, 0, 0, 0);
-        slots.push(base.toISOString());
-        const half = new Date(base);
-        half.setMinutes(30);
-        slots.push(half.toISOString());
-      }
-    }
-    return slots;
-  };
-
-  const slotsArray = allSlots();
-
-  const updateSelected = (set: Set<string>) => {
-    setSelected(set);
-    onChange?.(new Set(set));
-  };
-
-  const toggleSlot = (slot: string) => {
-    const next = new Set(selected);
-    if (next.has(slot)) next.delete(slot); else next.add(slot);
-    updateSelected(next);
-  };
-
-  const handleClick = (slot: string, e: React.MouseEvent<HTMLButtonElement>) => {
-    if (e.shiftKey && last) {
-      const startIdx = slotsArray.indexOf(last);
-      const endIdx = slotsArray.indexOf(slot);
-      if (startIdx !== -1 && endIdx !== -1) {
-        const [s, eIdx] = startIdx < endIdx ? [startIdx, endIdx] : [endIdx, startIdx];
-        const range = slotsArray.slice(s, eIdx + 1);
-        const next = new Set(selected);
-        range.forEach(id => next.add(id));
-        updateSelected(next);
-      }
+  const handleSelectSlot = ({ start }: SlotInfo) => {
+    const rounded = setMinutes(start, start.getMinutes() < 30 ? 0 : 30);
+    const iso = new Date(rounded.setSeconds(0, 0)).toISOString();
+    const exists = events.find((e) => e.id === iso);
+    let next: AvailabilityEvent[];
+    if (exists) {
+      next = events.filter((e) => e.id !== iso);
     } else {
-      toggleSlot(slot);
+      next = [
+        ...events,
+        {
+          id: iso,
+          title: 'Available',
+          start: new Date(iso),
+          end: new Date(new Date(iso).getTime() + 30 * 60000),
+        },
+      ];
     }
-    setLast(slot);
+    setEvents(next);
+    onChange?.(new Set(next.map((e) => e.start.toISOString())));
   };
 
-  const daysArr = Array.from({ length: days }, (_, i) => {
-    const d = new Date(startDate);
-    d.setDate(d.getDate() + i);
-    return d;
+  const handleNavigate = (date: Date) => {
+    const weekStart = startOfWeek(date);
+    const weekEnd = addDays(weekStart, 6);
+    let newDate = weekStart;
+    if (weekStart < startDate) newDate = startDate;
+    else if (weekEnd > maxDate) newDate = addDays(maxDate, -6);
+    setCurrentDate(newDate);
+  };
+
+  const eventStyleGetter = () => ({
+    className: 'bg-indigo-500 border-none text-white text-xs rounded',
   });
 
   return (
-    <table className="border-collapse text-center text-xs">
-      <thead>
-        <tr>
-          <th className="w-16"></th>
-          {daysArr.map(d => (
-            <th key={d.toISOString()} className="px-1 font-semibold">
-              {d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {hours.map(hour => (
-          <tr key={hour}>
-            <td className="pr-1 whitespace-nowrap">
-              {new Date(new Date().setHours(hour,0,0,0)).toLocaleTimeString([], {hour:'numeric',hour12:true})}
-            </td>
-            {daysArr.map(day => {
-              const base = new Date(day);
-              base.setHours(hour,0,0,0);
-              const id1 = base.toISOString();
-              const half = new Date(base);
-              half.setMinutes(30);
-              const id2 = half.toISOString();
-              const s1 = selected.has(id1);
-              const s2 = selected.has(id2);
-              return (
-                <>
-                  <td key={id1} className="p-0.5">
-                    <button onClick={(e)=>handleClick(id1,e)} className={`w-5 h-5 border ${s1 ? 'bg-indigo-500' : 'bg-white'}`}></button>
-                  </td>
-                  <td key={id2} className="p-0.5">
-                    <button onClick={(e)=>handleClick(id2,e)} className={`w-5 h-5 border ${s2 ? 'bg-indigo-500' : 'bg-white'}`}></button>
-                  </td>
-                </>
-              );
-            })}
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <Calendar
+      localizer={localizer}
+      events={events}
+      defaultView={Views.WEEK}
+      view={Views.WEEK}
+      date={currentDate}
+      onNavigate={handleNavigate}
+      min={minTime}
+      max={maxTime}
+      step={30}
+      timeslots={1}
+      selectable
+      onSelectSlot={handleSelectSlot}
+      eventPropGetter={eventStyleGetter}
+      style={{ height: 500 }}
+    />
   );
 }
