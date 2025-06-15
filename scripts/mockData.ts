@@ -89,6 +89,22 @@ export async function loadEnhancedMockData() {
       linkedinUrl: 'https://linkedin.com/in/sarah-kim-stanford',
       resumeUrl: 'https://monet-file-uploads-dev.s3.us-east-1.amazonaws.com/resumes/sarah_kim_resume.pdf',
       clubs: 'Stanford Women in Tech, CS Honor Code Council, Habitat for Humanity'
+    },
+    {
+      email: 'euisang214@gmail.com',
+      name: 'Euisang Lee',
+      role: 'candidate',
+      school: 'New York University',
+      major: 'Finance',
+      graduationYear: '2026',
+      targetRole: 'Investment Banking Analyst',
+      targetIndustry: 'Investment Banking',
+      offerBonusCents: 20000, // $200
+      schoolEmail: 'euisang.lee@nyu.edu',
+      schoolEmailVerified: true,
+      linkedinUrl: 'https://linkedin.com/in/euisang-lee',
+      resumeUrl: 'https://monet-file-uploads-dev.s3.us-east-1.amazonaws.com/resumes/euisang_lee_resume.pdf',
+      clubs: 'Finance Society, Investment Club'
     }
   ]);
 
@@ -98,6 +114,7 @@ export async function loadEnhancedMockData() {
       email: 'michael.thompson@goldmansachs.com',
       name: 'Michael Thompson',
       role: 'professional',
+      authenticated: true,
       title: 'Vice President',
       company: 'Goldman Sachs',
       industry: 'Investment Banking',
@@ -115,6 +132,7 @@ export async function loadEnhancedMockData() {
       email: 'jennifer.wong@mckinsey.com',
       name: 'Jennifer Wong',
       role: 'professional',
+      authenticated: true,
       title: 'Associate Partner',
       company: 'McKinsey & Company',
       industry: 'Management Consulting',
@@ -132,6 +150,7 @@ export async function loadEnhancedMockData() {
       email: 'david.park@kkr.com',
       name: 'David Park',
       role: 'professional',
+      authenticated: true,
       title: 'Principal',
       company: 'KKR',
       industry: 'Private Equity',
@@ -150,6 +169,7 @@ export async function loadEnhancedMockData() {
       email: 'emily.davis@bain.com',
       name: 'Emily Davis',
       role: 'professional',
+      authenticated: true,
       title: 'Principal',
       company: 'Bain & Company',
       industry: 'Management Consulting',
@@ -167,6 +187,7 @@ export async function loadEnhancedMockData() {
       email: 'alex.rivera@jpmorgan.com',
       name: 'Alex Rivera',
       role: 'professional',
+      authenticated: true,
       title: 'Associate',
       company: 'J.P. Morgan',
       industry: 'Investment Banking',
@@ -397,6 +418,34 @@ export async function loadEnhancedMockData() {
       stripePaymentIntentId: 'pi_mock_extended_1',
       stripeTransferIds: ['tr_mock_goldman_extended_1'],
       paidAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+    },
+
+    // Upcoming sessions for Euisang Lee
+    {
+      candidateId: candidates[3]._id,
+      professionalId: professionals[0]._id,
+      firmId: 'Goldman Sachs',
+      scheduledAt: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000),
+      durationMinutes: 30,
+      rateCents: 15000,
+      status: 'confirmed',
+      isFirstChatAtFirm: true,
+      zoomJoinUrl: 'https://zoom.us/j/mockeui123',
+      zoomMeetingId: 'mockeui123',
+      stripePaymentIntentId: 'pi_mock_euisang_confirmed_1',
+      paidAt: new Date(),
+    },
+    {
+      candidateId: candidates[3]._id,
+      professionalId: professionals[4]._id,
+      firmId: 'J.P. Morgan',
+      scheduledAt: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+      durationMinutes: 45,
+      rateCents: 12000,
+      status: 'requested',
+      requestMessage: 'Hi Alex, excited to learn about TMT banking at JPM.',
+      isFirstChatAtFirm: true,
+      stripePaymentIntentId: 'pi_mock_euisang_pending_1',
     }
   ]);
 
