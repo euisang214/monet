@@ -27,21 +27,20 @@ interface SessionSuccessData {
 
 interface StripeCheckoutProps {
   professional: Professional;
-  selectedDateTime: Date | null;
+  availability: Array<{ start: Date; end: Date }>;
   onSuccess: (sessionData: SessionSuccessData) => void;
   onCancel: () => void;
   onError: (error: string) => void;
 }
 
 interface BookingFormData {
-  scheduledAt: string;
   durationMinutes: number;
   requestMessage: string;
 }
 
 export default function StripeCheckout({
   professional,
-  selectedDateTime,
+  availability,
   onSuccess,
   onCancel,
   onError
@@ -50,14 +49,13 @@ export default function StripeCheckout({
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'details' | 'payment' | 'processing'>('details');
   const [bookingData, setBookingData] = useState<BookingFormData>({
-    scheduledAt: selectedDateTime?.toISOString() || '',
     durationMinutes: 30,
     requestMessage: ''
   });
 
   const handleBookingSubmit = async () => {
-    if (!session?.user?.id || !selectedDateTime) {
-      onError('Please sign in and select a time slot');
+    if (!session?.user?.id || availability.length === 0) {
+      onError('Please sign in and select availability');
       return;
     }
 
@@ -77,7 +75,7 @@ export default function StripeCheckout({
           body: JSON.stringify({
             candidateId: session.user.id,
             professionalId: professional._id,
-            scheduledAt: selectedDateTime.toISOString(),
+            candidateAvailability: availability.map(a => ({ start: a.start.toISOString(), end: a.end.toISOString() })),
             durationMinutes: bookingData.durationMinutes,
             requestMessage: bookingData.requestMessage.trim()
           })
@@ -97,32 +95,16 @@ export default function StripeCheckout({
       // Simulate payment processing delay
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // In production, this would be handled by Stripe webhooks
-      // For development, we'll mark the session as paid immediately
-      const confirmResult = await apiRequest<{ zoomMeeting?: { joinUrl: string } }>(
-        `/api/sessions/${sessionId}/confirm`, {
-          method: 'POST',
-          body: JSON.stringify({
-            professionalId: professional._id,
-            action: 'accept'
-          })
+      // In production, payment confirmation would be handled by Stripe webhooks
+      onSuccess({
+        sessionId,
+        scheduledAt: null,
+        professional: {
+          name: professional.name,
+          title: professional.title,
+          company: professional.company
         }
-      );
-
-      if (confirmResult.success) {
-        onSuccess({
-          sessionId,
-          scheduledAt: selectedDateTime,
-          professional: {
-            name: professional.name,
-            title: professional.title,
-            company: professional.company
-          },
-          zoomJoinUrl: confirmResult.data?.zoomMeeting?.joinUrl
-        });
-      } else {
-        throw new Error('Session created but confirmation failed');
-      }
+      });
 
     } catch (error) {
       console.error('Booking error:', error);
@@ -184,25 +166,8 @@ export default function StripeCheckout({
         
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <span className="text-gray-500">Date:</span>
-            <div className="font-medium">
-              {selectedDateTime?.toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </div>
-          </div>
-          <div>
-            <span className="text-gray-500">Time:</span>
-            <div className="font-medium">
-              {selectedDateTime?.toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-              })}
-            </div>
+            <span className="text-gray-500">Selected Slots:</span>
+            <div className="font-medium">{availability.length}</div>
           </div>
           <div>
             <span className="text-gray-500">Duration:</span>
@@ -303,7 +268,7 @@ export default function StripeCheckout({
           
           <button
             onClick={handleBookingSubmit}
-            disabled={loading || !bookingData.requestMessage.trim()}
+            disabled={loading || !bookingData.requestMessage.trim() || availability.length === 0}
             className="px-8 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold transition-colors"
           >
             {loading ? 'Processing...' : 'Book Session'}

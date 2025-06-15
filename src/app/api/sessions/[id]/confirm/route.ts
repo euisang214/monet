@@ -11,6 +11,7 @@ interface ConfirmSessionRequest {
   action: 'accept' | 'decline';
   declineReason?: string;
   alternativeSlots?: string[]; // ISO date strings for alternative times
+  scheduledAt?: string;
 }
 
 /**
@@ -35,7 +36,7 @@ export const POST = withAuthAndDB(async (
     return errorResponse(validation.error!, 400);
   }
   
-  const { professionalId, action, declineReason, alternativeSlots } = validation.data!;
+  const { professionalId, action, declineReason, alternativeSlots, scheduledAt } = validation.data!;
 
   if (!['accept', 'decline'].includes(action)) {
     return errorResponse('Action must be either "accept" or "decline"', 400);
@@ -64,6 +65,36 @@ export const POST = withAuthAndDB(async (
   }
 
   if (action === 'accept') {
+    const chosenDate = scheduledAt ? new Date(scheduledAt) : sessionRecord.scheduledAt;
+    if (!chosenDate) {
+      return errorResponse('scheduledAt is required to confirm the session', 400);
+    }
+
+    if (chosenDate <= new Date()) {
+      return errorResponse('Selected time must be in the future', 400);
+    }
+
+    if (sessionRecord.candidateAvailability?.length) {
+      const within = sessionRecord.candidateAvailability.some((range: { start: Date | string; end: Date | string }) => {
+        return chosenDate >= new Date(range.start) && chosenDate < new Date(range.end);
+      });
+      if (!within) {
+        return errorResponse('Selected time is outside candidate availability', 400);
+      }
+    }
+
+    sessionRecord.scheduledAt = chosenDate;
+
+    const conflict = await Session.findOne({
+      _id: { $ne: sessionRecord._id },
+      $or: [
+        { candidateId: sessionRecord.candidateId, scheduledAt: chosenDate, status: { $in: ['requested','confirmed'] } },
+        { professionalId, scheduledAt: chosenDate, status: { $in: ['requested','confirmed'] } }
+      ]
+    });
+    if (conflict) {
+      return errorResponse('Time slot conflicts with existing session', 409);
+    }
     // Check if professional has completed Stripe onboarding
     const professional = await User.findById(professionalId);
     if (!professional?.stripeAccountId) {

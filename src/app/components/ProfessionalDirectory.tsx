@@ -61,8 +61,8 @@ export default function ProfessionalDirectory() {
       const url = `/api/professional/search${params.toString() ? `?${params.toString()}` : ''}`;
       const result = await apiRequest<{ professionals: Professional[] }>(url);
       if (result.success) {
-        setProfessionals(result.data?.data?.professionals || []);
-      };
+        setProfessionals(result.data?.professionals || []);
+      }
     } catch (error) {
       console.error('Error fetching professionals:', error);
     } finally {

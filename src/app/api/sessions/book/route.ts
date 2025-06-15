@@ -16,7 +16,8 @@ function getStripe() {
 interface BookSessionRequest {
   candidateId: string;
   professionalId: string;
-  scheduledAt: string; // ISO date string
+  scheduledAt?: string; // ISO date string
+  candidateAvailability?: Array<{ start: string; end: string }>;
   durationMinutes?: number;
   requestMessage?: string;
   referrerProId?: string; // For referral tracking
@@ -29,7 +30,7 @@ interface BookSessionRequest {
 export const POST = withAuthAndDB(async (request: NextRequest, context: unknown, session: AuthSession) => {
   // Validate request body
   const validation = await validateRequestBody<BookSessionRequest>(request, [
-    'candidateId', 'professionalId', 'scheduledAt'
+    'candidateId', 'professionalId'
   ]);
   
   if (!validation.isValid) {
@@ -40,6 +41,7 @@ export const POST = withAuthAndDB(async (request: NextRequest, context: unknown,
     candidateId,
     professionalId,
     scheduledAt,
+    candidateAvailability = [],
     durationMinutes = 30,
     requestMessage,
     referrerProId
@@ -68,22 +70,25 @@ export const POST = withAuthAndDB(async (request: NextRequest, context: unknown,
     return errorResponse('Professional has not set a session rate', 400);
   }
 
-  // Validate scheduled time is in the future
-  const scheduledDate = new Date(scheduledAt);
-  if (scheduledDate <= new Date()) {
-    return errorResponse('Scheduled time must be in the future', 400);
-  }
+  let scheduledDate: Date | undefined;
+  if (scheduledAt) {
+    scheduledDate = new Date(scheduledAt);
+    if (scheduledDate <= new Date()) {
+      return errorResponse('Scheduled time must be in the future', 400);
+    }
 
-  // Check for conflicting sessions (basic validation)
-  const conflictingSession = await Session.findOne({
-    $or: [
-      { candidateId, scheduledAt: scheduledDate, status: { $in: ['requested', 'confirmed'] } },
-      { professionalId, scheduledAt: scheduledDate, status: { $in: ['requested', 'confirmed'] } }
-    ]
-  });
+    const conflictingSession = await Session.findOne({
+      $or: [
+        { candidateId, scheduledAt: scheduledDate, status: { $in: ['requested', 'confirmed'] } },
+        { professionalId, scheduledAt: scheduledDate, status: { $in: ['requested', 'confirmed'] } }
+      ]
+    });
 
-  if (conflictingSession) {
-    return errorResponse('Time slot conflicts with existing session', 409);
+    if (conflictingSession) {
+      return errorResponse('Time slot conflicts with existing session', 409);
+    }
+  } else if (!candidateAvailability.length) {
+    return errorResponse('Either scheduledAt or candidateAvailability is required', 400);
   }
 
   // Determine if this is first chat at firm (for offer bonus tracking)
@@ -99,7 +104,11 @@ export const POST = withAuthAndDB(async (request: NextRequest, context: unknown,
   const sessionRecord = new Session({
     candidateId,
     professionalId,
-    scheduledAt: scheduledDate,
+    ...(scheduledDate && { scheduledAt: scheduledDate }),
+    candidateAvailability: candidateAvailability.map(slot => ({
+      start: new Date(slot.start),
+      end: new Date(slot.end),
+    })),
     durationMinutes,
     rateCents: professional.sessionRateCents,
     status: 'requested',
@@ -122,7 +131,7 @@ export const POST = withAuthAndDB(async (request: NextRequest, context: unknown,
       professionalId,
       type: 'session_fee'
     },
-    description: `Session with ${professional.name} - ${new Date(scheduledAt).toLocaleDateString()}`
+    description: `Session with ${professional.name}`
   });
 
   // Update session with payment intent
