@@ -16,7 +16,14 @@ interface Session {
   rateCents: number;
   status: 'requested' | 'confirmed' | 'completed' | 'cancelled';
   zoomJoinUrl?: string;
-  candidate: {
+  candidate?: {
+    name: string;
+    email: string;
+    targetRole?: string;
+    targetIndustry?: string;
+    profileImageUrl?: string;
+  };
+  candidateIdInfo?: {
     name: string;
     email: string;
     targetRole?: string;
@@ -85,12 +92,24 @@ export default function EnhancedProDashboard() {
       
       if (result.success && result.data) {
         const { upcoming, completed, pending } = result.data;
-        
-        setUpcomingSessions(upcoming.filter((s: Session) => s.status === 'confirmed'));
-        setInboundRequests(pending.filter((s: Session) => !s.referrerProId));
-        setReferralRequests(pending.filter((s: Session) => s.referrerProId));
-        setPendingFeedback(completed.filter((s: Session) => !s.feedbackSubmittedAt));
-        setCompletedSessions(completed.filter((s: Session) => s.feedbackSubmittedAt));
+
+        const normalize = (arr: any[]) =>
+          arr.map((s: any) => ({
+            ...s,
+            candidate: s.candidate || s.candidateId,
+            candidateIdInfo: s.candidateId,
+            candidateId: typeof s.candidateId === 'string' ? s.candidateId : s.candidateId?._id,
+          }));
+
+        const normUpcoming = normalize(upcoming);
+        const normCompleted = normalize(completed);
+        const normPending = normalize(pending);
+
+        setUpcomingSessions(normUpcoming.filter((s: Session) => s.status === 'confirmed'));
+        setInboundRequests(normPending.filter((s: Session) => !s.referrerProId));
+        setReferralRequests(normPending.filter((s: Session) => s.referrerProId));
+        setPendingFeedback(normCompleted.filter((s: Session) => !s.feedbackSubmittedAt));
+        setCompletedSessions(normCompleted.filter((s: Session) => s.feedbackSubmittedAt));
         
         // Mock earnings data - would come from API in real implementation
         setEarnings({
@@ -236,14 +255,32 @@ export default function EnhancedProDashboard() {
                     <div key={sessionItem._id} className="px-6 py-4 hover:bg-gray-50">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3">
-                          <div className={`w-10 h-10 ${getAvatarGradient(index)} rounded-full flex items-center justify-center text-white font-bold`}>
-                            {sessionItem.candidate.name.charAt(0)}
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-gray-900">{sessionItem.candidate.name}</h3>
-                            <p className="text-sm text-gray-600">
-                              {formatDate(sessionItem.scheduledAt)}
-                            </p>
+                        {(() => {
+                          const cand = (sessionItem as any).candidate || (sessionItem as any).candidateId || sessionItem.candidateIdInfo;
+                          return (
+                            <div className={`w-10 h-10 ${getAvatarGradient(index)} rounded-full flex items-center justify-center text-white font-bold overflow-hidden`}>
+                              {cand?.profileImageUrl ? (
+                                <img
+                                  src={cand.profileImageUrl}
+                                  alt={cand.name}
+                                  className="w-10 h-10 rounded-full object-cover"
+                                />
+                              ) : (
+                                cand?.name?.charAt(0) || '?'
+                              )}
+                            </div>
+                          );
+                        })()}
+                        <div>
+                          {(() => {
+                            const cand = (sessionItem as any).candidate || (sessionItem as any).candidateId || sessionItem.candidateIdInfo;
+                            return (
+                              <>
+                                <h3 className="font-semibold text-gray-900">{cand?.name || 'Unknown'}</h3>
+                                <p className="text-sm text-gray-600">{formatDate(sessionItem.scheduledAt)}</p>
+                              </>
+                            );
+                          })()}
                           </div>
                         </div>
                         {sessionItem.zoomJoinUrl && (
@@ -308,14 +345,28 @@ export default function EnhancedProDashboard() {
                       <div key={sessionItem._id} className="px-6 py-3">
                         <div className="flex justify-between items-center">
                           <div className="flex items-center space-x-3">
-                            <div className={`w-8 h-8 ${getAvatarGradient(index + 1)} rounded-full flex items-center justify-center text-white font-bold text-sm`}>
-                              {sessionItem.candidate.name.charAt(0)}
-                            </div>
+                            {(() => {
+                              const cand = (sessionItem as any).candidate || (sessionItem as any).candidateId || sessionItem.candidateIdInfo;
+                              return (
+                                <div className={`w-8 h-8 ${getAvatarGradient(index + 1)} rounded-full flex items-center justify-center text-white font-bold text-sm overflow-hidden`}>
+                                  {cand?.profileImageUrl ? (
+                                    <img src={cand.profileImageUrl} alt={cand.name} className="w-8 h-8 rounded-full object-cover" />
+                                  ) : (
+                                    cand?.name?.charAt(0) || '?'
+                                  )}
+                                </div>
+                              );
+                            })()}
                             <div>
-                              <h4 className="font-medium text-gray-900 text-sm">{sessionItem.candidate.name}</h4>
-                              <p className="text-xs text-gray-600">
-                                {formatDate(sessionItem.scheduledAt)}
-                              </p>
+                              {(() => {
+                                const cand = (sessionItem as any).candidate || (sessionItem as any).candidateId || sessionItem.candidateIdInfo;
+                                return (
+                                  <>
+                                    <h4 className="font-medium text-gray-900 text-sm">{cand?.name || 'Unknown'}</h4>
+                                    <p className="text-xs text-gray-600">{formatDate(sessionItem.scheduledAt)}</p>
+                                  </>
+                                );
+                              })()}
                             </div>
                           </div>
                           <button
@@ -346,14 +397,28 @@ export default function EnhancedProDashboard() {
                       <div key={sessionItem._id} className="px-6 py-3">
                         <div className="flex justify-between items-center">
                           <div className="flex items-center space-x-3">
-                            <div className={`w-8 h-8 ${getAvatarGradient(index + 2)} rounded-full flex items-center justify-center text-white font-bold text-sm`}>
-                              {sessionItem.candidate.name.charAt(0)}
-                            </div>
+                            {(() => {
+                              const cand = (sessionItem as any).candidate || (sessionItem as any).candidateId || sessionItem.candidateIdInfo;
+                              return (
+                                <div className={`w-8 h-8 ${getAvatarGradient(index + 2)} rounded-full flex items-center justify-center text-white font-bold text-sm overflow-hidden`}>
+                                  {cand?.profileImageUrl ? (
+                                    <img src={cand.profileImageUrl} alt={cand.name} className="w-8 h-8 rounded-full object-cover" />
+                                  ) : (
+                                    cand?.name?.charAt(0) || '?'
+                                  )}
+                                </div>
+                              );
+                            })()}
                             <div>
-                              <h4 className="font-medium text-gray-900 text-sm">{sessionItem.candidate.name}</h4>
-                              <p className="text-xs text-gray-600">
-                                Referred • {formatDate(sessionItem.scheduledAt, false)}
-                              </p>
+                              {(() => {
+                                const cand = (sessionItem as any).candidate || (sessionItem as any).candidateId || sessionItem.candidateIdInfo;
+                                return (
+                                  <>
+                                    <h4 className="font-medium text-gray-900 text-sm">{cand?.name || 'Unknown'}</h4>
+                                    <p className="text-xs text-gray-600">Referred • {formatDate(sessionItem.scheduledAt, false)}</p>
+                                  </>
+                                );
+                              })()}
                             </div>
                           </div>
                           <button
@@ -424,14 +489,28 @@ export default function EnhancedProDashboard() {
                     <div key={sessionItem._id} className="px-6 py-4">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3">
-                          <div className={`w-8 h-8 ${getAvatarGradient(index + 3)} rounded-full flex items-center justify-center text-white font-bold text-sm`}>
-                            {sessionItem.candidate.name.charAt(0)}
-                          </div>
+                          {(() => {
+                            const cand = (sessionItem as any).candidate || (sessionItem as any).candidateId || sessionItem.candidateIdInfo;
+                            return (
+                              <div className={`w-8 h-8 ${getAvatarGradient(index + 3)} rounded-full flex items-center justify-center text-white font-bold text-sm overflow-hidden`}>
+                                {cand?.profileImageUrl ? (
+                                  <img src={cand.profileImageUrl} alt={cand.name} className="w-8 h-8 rounded-full object-cover" />
+                                ) : (
+                                  cand?.name?.charAt(0) || '?'
+                                )}
+                              </div>
+                            );
+                          })()}
                           <div>
-                            <h4 className="font-medium text-gray-900">{sessionItem.candidate.name}</h4>
-                            <p className="text-sm text-gray-600">
-                              {formatDate(sessionItem.scheduledAt, false)}
-                            </p>
+                            {(() => {
+                              const cand = (sessionItem as any).candidate || (sessionItem as any).candidateId || sessionItem.candidateIdInfo;
+                              return (
+                                <>
+                                  <h4 className="font-medium text-gray-900">{cand?.name || 'Unknown'}</h4>
+                                  <p className="text-sm text-gray-600">{formatDate(sessionItem.scheduledAt, false)}</p>
+                                </>
+                              );
+                            })()}
                           </div>
                         </div>
                         <button
@@ -462,14 +541,28 @@ export default function EnhancedProDashboard() {
                     <div key={sessionItem._id} className="px-6 py-4">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3">
-                          <div className={`w-8 h-8 ${getAvatarGradient(index + 4)} rounded-full flex items-center justify-center text-white font-bold text-sm`}>
-                            {sessionItem.candidate.name.charAt(0)}
-                          </div>
+                          {(() => {
+                            const cand = (sessionItem as any).candidate || (sessionItem as any).candidateId || sessionItem.candidateIdInfo;
+                            return (
+                              <div className={`w-8 h-8 ${getAvatarGradient(index + 4)} rounded-full flex items-center justify-center text-white font-bold text-sm overflow-hidden`}>
+                                {cand?.profileImageUrl ? (
+                                  <img src={cand.profileImageUrl} alt={cand.name} className="w-8 h-8 rounded-full object-cover" />
+                                ) : (
+                                  cand?.name?.charAt(0) || '?'
+                                )}
+                              </div>
+                            );
+                          })()}
                           <div>
-                            <h4 className="font-medium text-gray-900">{sessionItem.candidate.name}</h4>
-                            <p className="text-sm text-gray-600">
-                              {formatDate(sessionItem.scheduledAt, false)} • ${(sessionItem.rateCents / 100).toFixed(0)}
-                            </p>
+                            {(() => {
+                              const cand = (sessionItem as any).candidate || (sessionItem as any).candidateId || sessionItem.candidateIdInfo;
+                              return (
+                                <>
+                                  <h4 className="font-medium text-gray-900">{cand?.name || 'Unknown'}</h4>
+                                  <p className="text-sm text-gray-600">{formatDate(sessionItem.scheduledAt, false)} • ${(sessionItem.rateCents / 100).toFixed(0)}</p>
+                                </>
+                              );
+                            })()}
                           </div>
                         </div>
                         <span className="text-green-600 text-sm font-medium">✓ Complete</span>
@@ -487,7 +580,7 @@ export default function EnhancedProDashboard() {
         <Modal
           isOpen={!!feedbackModal}
           onClose={() => setFeedbackModal(null)}
-          title={feedbackModal ? `Submit Feedback for ${feedbackModal.candidate.name}` : ''}
+          title={feedbackModal ? `Submit Feedback for ${(feedbackModal as any).candidate?.name || (feedbackModal as any).candidateIdInfo?.name || (feedbackModal as any).candidateId?.name || 'Candidate'}` : ''}
           subtitle={feedbackModal ? `Session on ${formatLongDate(feedbackModal.scheduledAt)}` : ''}
           maxWidth="3xl"
           actions={
@@ -513,12 +606,28 @@ export default function EnhancedProDashboard() {
             <div className="space-y-8">
               {/* Candidate Header */}
               <div className="flex items-center space-x-4">
-                <div className={`w-12 h-12 ${getAvatarGradient(0)} rounded-full flex items-center justify-center text-white font-bold`}>
-                  {feedbackModal.candidate.name.charAt(0)}
-                </div>
+                {(() => {
+                  const cand = (feedbackModal as any).candidate || (feedbackModal as any).candidateIdInfo || (feedbackModal as any).candidateId;
+                  return (
+                    <div className={`w-12 h-12 ${getAvatarGradient(0)} rounded-full flex items-center justify-center text-white font-bold overflow-hidden`}>
+                      {cand?.profileImageUrl ? (
+                        <img src={cand.profileImageUrl} alt={cand.name} className="w-12 h-12 rounded-full object-cover" />
+                      ) : (
+                        cand?.name?.charAt(0) || '?'
+                      )}
+                    </div>
+                  );
+                })()}
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900">{feedbackModal.candidate.name}</h4>
-                  <p className="text-gray-600">Session on {formatLongDate(feedbackModal.scheduledAt)}</p>
+                  {(() => {
+                    const cand = (feedbackModal as any).candidate || (feedbackModal as any).candidateIdInfo || (feedbackModal as any).candidateId;
+                    return (
+                      <>
+                        <h4 className="text-lg font-semibold text-gray-900">{cand?.name || 'Candidate'}</h4>
+                        <p className="text-gray-600">Session on {formatLongDate(feedbackModal.scheduledAt)}</p>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 

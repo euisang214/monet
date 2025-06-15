@@ -31,7 +31,13 @@ interface Session {
   rateCents: number;
   status: 'requested' | 'confirmed' | 'completed' | 'cancelled';
   zoomJoinUrl?: string;
-  professional: {
+  professional?: {
+    name: string;
+    title: string;
+    company: string;
+    profileImageUrl?: string;
+  };
+  professionalIdInfo?: {
     name: string;
     title: string;
     company: string;
@@ -95,7 +101,13 @@ export default function EnhancedCandidateDashboard() {
       );
       if (sessionsResult.success) {
         console.log(sessionsResult);
-        setUpcomingSessions(sessionsResult.data?.data?.upcoming || []);
+        const sessions = (sessionsResult.data?.data?.upcoming || []).map((s: any) => ({
+          ...s,
+          professional: s.professional || s.professionalId,
+          professionalIdInfo: s.professionalId,
+          professionalId: typeof s.professionalId === 'string' ? s.professionalId : s.professionalId?._id
+        }));
+        setUpcomingSessions(sessions);
       }
 
       await fetchProfessionals();
@@ -303,25 +315,37 @@ export default function EnhancedCandidateDashboard() {
                   <div key={sessionItem._id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
-                        <div className={`w-12 h-12 ${getAvatarGradient(0)} rounded-full flex items-center justify-center text-white font-bold overflow-hidden`}>
-                          {sessionItem.professional.profileImageUrl ? (
-                            <img 
-                              src={sessionItem.professional.profileImageUrl} 
-                              alt={sessionItem.professional.name}
-                              className="w-12 h-12 rounded-full object-cover"
-                            />
-                          ) : (
-                            sessionItem.professional.name.charAt(0)
-                          )}
-                        </div>
-                        
+                        {(() => {
+                          const pro = (sessionItem as any).professional || (sessionItem as any).professionalId || sessionItem.professionalIdInfo;
+                          return (
+                            <div className={`w-12 h-12 ${getAvatarGradient(0)} rounded-full flex items-center justify-center text-white font-bold overflow-hidden`}>
+                              {pro?.profileImageUrl ? (
+                                <img
+                                  src={pro.profileImageUrl}
+                                  alt={pro.name}
+                                  className="w-12 h-12 rounded-full object-cover"
+                                />
+                              ) : (
+                                pro?.name?.charAt(0) || '?'
+                              )}
+                            </div>
+                          );
+                        })()}
+
                         <div>
-                          <h3 className="font-bold text-gray-900">
-                            {sessionItem.professional.name}
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            {sessionItem.professional.title} at {sessionItem.professional.company}
-                          </p>
+                          {(() => {
+                            const pro = (sessionItem as any).professional || (sessionItem as any).professionalId || sessionItem.professionalIdInfo;
+                            return (
+                              <>
+                                <h3 className="font-bold text-gray-900">
+                                  {pro?.name || 'Unknown'}
+                                </h3>
+                                <p className="text-sm text-gray-600">
+                                  {pro?.title} at {pro?.company}
+                                </p>
+                              </>
+                            );
+                          })()}
                           <div className="flex items-center space-x-4 mt-1">
                             <span className="text-sm text-indigo-600 font-medium">
                               {formatDate(sessionItem.scheduledAt, false)}
