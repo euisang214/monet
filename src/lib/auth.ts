@@ -78,7 +78,16 @@ export const authOptions: NextAuthOptions = {
       }
     },
 
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
+      if (trigger === 'update' && session) {
+        if (session.role) {
+          token.role = session.role as string;
+        }
+        if (typeof session.profileComplete !== 'undefined') {
+          token.profileComplete = session.profileComplete as boolean;
+        }
+      }
+
       if (user) {
         try {
           await connectDB();
