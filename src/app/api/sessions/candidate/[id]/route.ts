@@ -33,7 +33,7 @@ export const GET = withAuthAndDB(async (
     scheduledAt: { $gte: now },
     status: { $in: ['requested', 'confirmed'] }
   })
-  .populate('professional', 'name title company profileImageUrl')
+  .populate('professionalId', 'name title company profileImageUrl')
   .sort({ scheduledAt: 1 })
   .lean();
 
@@ -48,7 +48,7 @@ export const GET = withAuthAndDB(async (
       }
     ]
   })
-  .populate('professional', 'name title company profileImageUrl')
+  .populate('professionalId', 'name title company profileImageUrl')
   .sort({ scheduledAt: -1 })
   .limit(50) // Limit to recent 50 completed sessions
   .lean();
@@ -59,7 +59,7 @@ export const GET = withAuthAndDB(async (
     status: 'requested',
     scheduledAt: { $gte: now }
   })
-  .populate('professional', 'name title company profileImageUrl')
+  .populate('professionalId', 'name title company profileImageUrl')
   .sort({ createdAt: 1 })
   .lean();
 

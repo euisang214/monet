@@ -42,7 +42,6 @@ export async function loadEnhancedMockData() {
       email: 'alice.chen@harvard.edu',
       name: 'Alice Chen',
       role: 'candidate',
-      profileImageUrl: 'https://images.unsplash.com/photo-1494790108755-2616b612b3ff?w=150&h=150&fit=crop&crop=face',
       school: 'Harvard University',
       major: 'Economics',
       minor: 'Computer Science',
@@ -54,7 +53,6 @@ export async function loadEnhancedMockData() {
       schoolEmail: 'alice.chen@harvard.edu',
       schoolEmailVerified: true,
       linkedinUrl: 'https://linkedin.com/in/alice-chen-harvard',
-      resumeUrl: 'https://monet-file-uploads-dev.s3.us-east-1.amazonaws.com/resumes/alice_chen_resume.pdf',
       clubs: 'Harvard Investment Club President, Women in Business VP, Volunteer at Boston Food Bank'
     },
     {
@@ -70,7 +68,6 @@ export async function loadEnhancedMockData() {
       schoolEmail: 'john.martinez@upenn.edu',
       schoolEmailVerified: true,
       linkedinUrl: 'https://linkedin.com/in/johnmartinez-wharton',
-      resumeUrl: 'https://monet-file-uploads-dev.s3.us-east-1.amazonaws.com/resumes/john_martinez_resume.pdf',
       clubs: 'Wharton Consulting Club, Finance Society, Intramural Soccer Team Captain'
     },
     {
@@ -87,23 +84,21 @@ export async function loadEnhancedMockData() {
       schoolEmail: 'sarah.kim@stanford.edu',
       schoolEmailVerified: true,
       linkedinUrl: 'https://linkedin.com/in/sarah-kim-stanford',
-      resumeUrl: 'https://monet-file-uploads-dev.s3.us-east-1.amazonaws.com/resumes/sarah_kim_resume.pdf',
       clubs: 'Stanford Women in Tech, CS Honor Code Council, Habitat for Humanity'
     },
     {
       email: 'euisang214@gmail.com',
-      name: 'Euisang Lee',
+      name: 'Ethan Shin',
       role: 'candidate',
-      school: 'New York University',
+      school: 'UPenn',
       major: 'Finance',
-      graduationYear: '2026',
+      graduationYear: '2024',
       targetRole: 'Investment Banking Analyst',
       targetIndustry: 'Investment Banking',
       offerBonusCents: 20000, // $200
       schoolEmail: 'euisang.lee@nyu.edu',
       schoolEmailVerified: true,
       linkedinUrl: 'https://linkedin.com/in/euisang-lee',
-      resumeUrl: 'https://monet-file-uploads-dev.s3.us-east-1.amazonaws.com/resumes/euisang_lee_resume.pdf',
       clubs: 'Finance Society, Investment Club'
     }
   ]);
@@ -420,7 +415,7 @@ export async function loadEnhancedMockData() {
       paidAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
     },
 
-    // Upcoming sessions for Euisang Lee
+    // Upcoming sessions for Ethan
     {
       candidateId: candidates[3]._id,
       professionalId: professionals[0]._id,

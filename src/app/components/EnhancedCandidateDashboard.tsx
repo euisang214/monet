@@ -94,7 +94,8 @@ export default function EnhancedCandidateDashboard() {
         `/api/sessions/candidate/${session.user.id}`
       );
       if (sessionsResult.success) {
-        setUpcomingSessions(sessionsResult.data?.upcoming || []);
+        console.log(sessionsResult);
+        setUpcomingSessions(sessionsResult.data?.data?.upcoming || []);
       }
 
       await fetchProfessionals();
