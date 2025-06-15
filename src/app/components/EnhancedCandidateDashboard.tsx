@@ -125,6 +125,8 @@ export default function EnhancedCandidateDashboard() {
 
         // API now returns only confirmed upcoming sessions
         setUpcomingSessions(upcomingNormalized);
+        console.log("Upcoming");
+        console.log(sessionsResult);
         setPendingSessions(pendingNormalized);
       }
 
@@ -162,7 +164,7 @@ export default function EnhancedCandidateDashboard() {
       !filters.industry &&
       !filters.company &&
       !filters.expertise &&
-      filters.maxRate === 1000 &&
+      filters.maxRate === 10000 &&
       filters.minExperience === 0;
 
     if (noFilters) {
