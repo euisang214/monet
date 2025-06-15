@@ -1,6 +1,9 @@
 'use client';
 import { useState } from 'react';
 
+import { enUS } from 'date-fns/locale';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+
 import {
   Calendar,
   dateFnsLocalizer,
@@ -18,8 +21,7 @@ import {
   setMinutes,
   startOfDay,
 } from 'date-fns';
-import { enUS } from 'date-fns/locale';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
+
 
 interface Props {
   startDate: Date;
