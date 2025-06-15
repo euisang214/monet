@@ -61,7 +61,7 @@ export default function EnhancedCandidateDashboard() {
     industry: '',
     company: '',
     expertise: '',
-    maxRate: 1000,
+    maxRate: 10000,
     minExperience: 0
   });
 
@@ -78,7 +78,7 @@ export default function EnhancedCandidateDashboard() {
       const url = `/api/professional/search${params.toString() ? `?${params.toString()}` : ''}`;
       const prosResult = await apiRequest<{ professionals: Professional[] }>(url);
       if (prosResult.success) {
-        setProfessionals(prosResult.data?.professionals || []);
+        setProfessionals(prosResult.data?.data?.professionals || []);
       }
     } catch (error) {
       console.error('Error fetching professionals:', error);

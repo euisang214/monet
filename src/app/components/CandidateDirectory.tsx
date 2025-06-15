@@ -22,7 +22,6 @@ interface CandidateFilters {
 
 export default function CandidateDirectory() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [filteredCandidates, setFilteredCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<CandidateFilters>({
@@ -42,7 +41,8 @@ export default function CandidateDirectory() {
       const url = `/api/candidate/search${params.toString() ? `?${params.toString()}` : ''}`;
       const result = await apiRequest<{ candidates: Candidate[] }>(url);
       if (result.success) {
-        setCandidates(result.data?.candidates || []);
+        console.log("Sucess");
+        setCandidates(result.data?.data?.candidates || []);
       }
     } catch (error) {
       console.error('Error fetching candidates:', error);
@@ -54,49 +54,6 @@ export default function CandidateDirectory() {
   useEffect(() => {
     fetchCandidates();
   }, [fetchCandidates]);
-
-  const filterCandidates = useCallback(() => {
-    let filtered = candidates;
-
-    const noFilters =
-      !searchQuery &&
-      !filters.school &&
-      !filters.major &&
-      !filters.targetRole;
-
-    if (noFilters) {
-      setFilteredCandidates(candidates);
-      return;
-    }
-
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        c =>
-          c.name.toLowerCase().includes(q) ||
-          (c.targetRole && c.targetRole.toLowerCase().includes(q)) ||
-          (c.targetIndustry && c.targetIndustry.toLowerCase().includes(q)) ||
-          (c.school && c.school.toLowerCase().includes(q)) ||
-          (c.major && c.major.toLowerCase().includes(q))
-      );
-    }
-
-    if (filters.school) {
-      filtered = filtered.filter(c => c.school && c.school.toLowerCase().includes(filters.school.toLowerCase()));
-    }
-    if (filters.major) {
-      filtered = filtered.filter(c => c.major && c.major.toLowerCase().includes(filters.major.toLowerCase()));
-    }
-    if (filters.targetRole) {
-      filtered = filtered.filter(c => c.targetRole && c.targetRole.toLowerCase().includes(filters.targetRole.toLowerCase()));
-    }
-
-    setFilteredCandidates(filtered);
-  }, [candidates, searchQuery, filters]);
-
-  useEffect(() => {
-    filterCandidates();
-  }, [filterCandidates]);
 
   if (loading) {
     return <div className="p-6 text-center">Loading candidates...</div>;
@@ -147,10 +104,10 @@ export default function CandidateDirectory() {
       </div>
 
       <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
-        {filteredCandidates.length === 0 ? (
+        {candidates.length === 0 ? (
           <div className="px-6 py-8 text-center text-gray-500">No candidates found</div>
         ) : (
-          filteredCandidates.slice(0, 10).map((cand) => (
+          candidates.slice(0, 10).map((cand) => (
             <div key={cand._id} className="px-6 py-3 flex items-center space-x-3 hover:bg-gray-50">
               <div className="w-8 h-8 bg-indigo-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
                 {cand.name.charAt(0)}
