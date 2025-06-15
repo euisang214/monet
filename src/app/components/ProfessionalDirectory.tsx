@@ -36,7 +36,6 @@ export default function ProfessionalDirectory() {
   });
   
   const [professionals, setProfessionals] = useState<Professional[]>([]);
-  const [filteredProfessionals, setFilteredProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<SearchFilters>({
@@ -83,69 +82,6 @@ export default function ProfessionalDirectory() {
     }
   }, [filters, searchQuery, isAuthenticated, fetchProfessionals]);
 
-  const filterProfessionals = useCallback(() => {
-    let filtered = professionals;
-
-    const noFilters =
-      !searchQuery &&
-      !filters.industry &&
-      !filters.company &&
-      !filters.expertise &&
-      filters.maxRate === 1000 &&
-      filters.minExperience === 0;
-
-    if (noFilters) {
-      setFilteredProfessionals(professionals);
-      return;
-    }
-
-    // Text search
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        pro =>
-          pro.name.toLowerCase().includes(query) ||
-          pro.title.toLowerCase().includes(query) ||
-          pro.company.toLowerCase().includes(query) ||
-          pro.bio.toLowerCase().includes(query) ||
-          pro.expertise.some(exp => exp.toLowerCase().includes(query))
-      );
-    }
-
-    // Apply filters
-    if (filters.industry) {
-      filtered = filtered.filter(pro =>
-        pro.industry.toLowerCase().includes(filters.industry.toLowerCase())
-      );
-    }
-
-    if (filters.company) {
-      filtered = filtered.filter(pro =>
-        pro.company.toLowerCase().includes(filters.company.toLowerCase())
-      );
-    }
-
-    if (filters.expertise) {
-      filtered = filtered.filter(pro =>
-        pro.expertise.some(exp =>
-          exp.toLowerCase().includes(filters.expertise.toLowerCase())
-        )
-      );
-    }
-
-    // Rate and experience filters
-    filtered = filtered.filter(
-      pro =>
-        pro.sessionRateCents <= filters.maxRate * 100 &&
-        pro.yearsExperience >= filters.minExperience
-    );
-
-    setFilteredProfessionals(filtered);
-  }, [professionals, searchQuery, filters]);
-
-  useEffect(() => {
-    filterProfessionals();
-  }, [filterProfessionals]);
 
 
   const handleBookSession = (professional: Professional) => {
@@ -274,14 +210,14 @@ export default function ProfessionalDirectory() {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-gray-900">
-              {filteredProfessionals.length} Professionals Found
+              {professionals.length} Professionals Found
             </h2>
             <div className="text-sm text-gray-500">
-              Showing {filteredProfessionals.length} results
+              Showing {professionals.length} results
             </div>
           </div>
 
-          {filteredProfessionals.length === 0 ? (
+          {professionals.length === 0 ? (
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
               <div className="text-gray-400 text-6xl mb-4">🔍</div>
               <div className="text-gray-500 text-lg mb-2">No professionals found matching your criteria</div>
@@ -289,7 +225,7 @@ export default function ProfessionalDirectory() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProfessionals.map((pro) => (
+              {professionals.map((pro) => (
                 <div key={pro._id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200 hover:border-indigo-200">
                   <div className="p-6">
                     <div className="flex items-start space-x-4 mb-4">
