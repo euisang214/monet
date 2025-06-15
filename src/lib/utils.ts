@@ -267,8 +267,16 @@ export async function apiRequest<T>(
     if (!response.ok) {
       return {
         success: false,
-        error: data.error || `HTTP ${response.status}: ${response.statusText}`
+        error: data?.error || `HTTP ${response.status}: ${response.statusText}`
       };
+    }
+
+    // Some API routes return { success: boolean, data: T }
+    if (typeof data === 'object' && data !== null && 'success' in data) {
+      if (data.success) {
+        return { success: true, data: data.data as T };
+      }
+      return { success: false, error: data.error as string };
     }
 
     return { success: true, data };
