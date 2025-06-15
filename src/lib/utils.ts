@@ -1,5 +1,4 @@
 import { type ClassValue, clsx } from 'clsx';
-import { log } from 'console';
 import { twMerge } from 'tailwind-merge';
 
 /**
@@ -271,15 +270,21 @@ export async function apiRequest<T>(
       };
     }
 
-    // Some API routes return { success: boolean, data: T }
-    if (typeof data === 'object' && data !== null && 'success' in data) {
-      if (data.success) {
-        return { success: true, data: data.data as T };
+    // Some API routes return nested { success, data } structures
+    let nested = data;
+    while (
+      nested &&
+      typeof nested === 'object' &&
+      'success' in nested &&
+      'data' in nested
+    ) {
+      if (!nested.success) {
+        return { success: false, error: (nested as { error: string }).error };
       }
-      return { success: false, error: data.error as string };
+      nested = (nested as { data: unknown }).data;
     }
 
-    return { success: true, data };
+    return { success: true, data: nested as T };
   } catch (error) {
     return {
       success: false,
