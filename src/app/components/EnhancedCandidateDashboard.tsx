@@ -101,7 +101,7 @@ export default function EnhancedCandidateDashboard() {
       const sessionsResult = await apiRequest<{
         upcoming: Session[];
         pending: Session[];
-      }>(`/api/sessions/candidate/${session.user.id}`);
+      }>(`/api/sessions/candidate`);
 
       if (sessionsResult.success && sessionsResult.data) {
         console.log(sessionsResult);
