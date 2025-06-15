@@ -204,7 +204,6 @@ export default function EnhancedCandidateDashboard() {
   const [selectedDateTime, setSelectedDateTime] = useState<Date | null>(null);
   const [bookingStep, setBookingStep] = useState<'datetime' | 'checkout'>('datetime');
 
-  // Add these helper functions before the return statement (around line 180)
   const generateAvailableSlots = () => {
     const slots = [];
     const now = new Date();
