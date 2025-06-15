@@ -56,6 +56,7 @@ interface SearchFilters {
 export default function EnhancedCandidateDashboard() {
   const { data: session } = useSession();
   const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
+  const [pendingSessions, setPendingSessions] = useState<Session[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [filteredProfessionals, setFilteredProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,19 +96,35 @@ export default function EnhancedCandidateDashboard() {
     if (!session?.user?.id) return;
 
     try {
-      // Fetch upcoming sessions
-      const sessionsResult = await apiRequest<{ upcoming: Session[] }>(
-        `/api/sessions/candidate/${session.user.id}`
-      );
-      if (sessionsResult.success) {
+      // Fetch sessions data
+      const sessionsResult = await apiRequest<{
+        upcoming: Session[];
+        pending: Session[];
+      }>(`/api/sessions/candidate/${session.user.id}`);
+
+      if (sessionsResult.success && sessionsResult.data) {
         console.log(sessionsResult);
-        const sessions = (sessionsResult.data?.data?.upcoming || []).map((s: any) => ({
-          ...s,
-          professional: s.professional || s.professionalId,
-          professionalIdInfo: s.professionalId,
-          professionalId: typeof s.professionalId === 'string' ? s.professionalId : s.professionalId?._id
-        }));
-        setUpcomingSessions(sessions);
+        const normalize = (arr: any[]) =>
+          arr.map((s: any) => ({
+            ...s,
+            professional: s.professional || s.professionalId,
+            professionalIdInfo: s.professionalId,
+            professionalId:
+              typeof s.professionalId === 'string'
+                ? s.professionalId
+                : s.professionalId?._id
+          }));
+
+        const upcomingNormalized = normalize(
+          sessionsResult.data.data.upcoming || []
+        );
+        const pendingNormalized = normalize(
+          sessionsResult.data.data.pending || []
+        );
+
+        // API now returns only confirmed upcoming sessions
+        setUpcomingSessions(upcomingNormalized);
+        setPendingSessions(pendingNormalized);
       }
 
       await fetchProfessionals();
@@ -289,98 +306,151 @@ export default function EnhancedCandidateDashboard() {
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
-          {/* Left Column - Upcoming Chats */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                  <span className="text-indigo-600 text-sm font-semibold">📅</span>
+
+          {/* Left Column */}
+          <div className="space-y-8">
+
+            {/* Pending Requests */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                    <span className="text-amber-600 text-sm font-semibold">⏳</span>
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">Pending Requests</h2>
+                  <span className="px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded-full font-medium">
+                    {pendingSessions.length}
+                  </span>
                 </div>
-                <h2 className="text-xl font-bold text-gray-900">Upcoming Chats</h2>
-                <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded-full font-medium">
-                  {upcomingSessions.length}
-                </span>
               </div>
-            </div>
-            <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
-              {upcomingSessions.length === 0 ? (
-                <div className="px-6 py-12 text-center">
-                  <div className="text-gray-400 text-4xl mb-4">💬</div>
-                  <div className="text-gray-500 text-lg mb-2">No upcoming sessions</div>
-                  <p className="text-gray-400">Book your first chat with a professional!</p>
-                </div>
-              ) : (
-                upcomingSessions.map((sessionItem) => (
-                  <div key={sessionItem._id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center justify-between">
+              <div className="divide-y divide-gray-100 max-h-48 overflow-y-auto">
+                {pendingSessions.length === 0 ? (
+                  <div className="px-6 py-8 text-center">
+                    <div className="text-gray-400 text-4xl mb-2">⌛</div>
+                    <div className="text-gray-500">No pending requests</div>
+                    <p className="text-gray-400 text-sm">Professionals will respond soon</p>
+                  </div>
+                ) : (
+                  pendingSessions.map((sessionItem) => (
+                    <div key={sessionItem._id} className="px-6 py-3 hover:bg-gray-50 transition-colors">
                       <div className="flex items-center space-x-4">
                         {(() => {
                           const pro = (sessionItem as any).professional || (sessionItem as any).professionalId || sessionItem.professionalIdInfo;
                           return (
-                            <div className={`w-12 h-12 ${getAvatarGradient(0)} rounded-full flex items-center justify-center text-white font-bold overflow-hidden`}>
+                            <div className={`w-10 h-10 ${getAvatarGradient(0)} rounded-full flex items-center justify-center text-white font-bold overflow-hidden`}>
                               {pro?.profileImageUrl ? (
-                                <img
-                                  src={pro.profileImageUrl}
-                                  alt={pro.name}
-                                  className="w-12 h-12 rounded-full object-cover"
-                                />
+                                <img src={pro.profileImageUrl} alt={pro.name} className="w-10 h-10 rounded-full object-cover" />
                               ) : (
                                 pro?.name?.charAt(0) || '?'
                               )}
                             </div>
                           );
                         })()}
-
                         <div>
                           {(() => {
                             const pro = (sessionItem as any).professional || (sessionItem as any).professionalId || sessionItem.professionalIdInfo;
                             return (
                               <>
-                                <h3 className="font-bold text-gray-900">
-                                  {pro?.name || 'Unknown'}
-                                </h3>
-                                <p className="text-sm text-gray-600">
-                                  {pro?.title} at {pro?.company}
-                                </p>
+                                <h4 className="font-medium text-gray-900 text-sm">{pro?.name || 'Unknown'}</h4>
+                                <p className="text-xs text-gray-600">{formatDate(sessionItem.scheduledAt)}</p>
                               </>
                             );
                           })()}
-                          <div className="flex items-center space-x-4 mt-1">
-                            <span className="text-sm text-indigo-600 font-medium">
-                              {formatDate(sessionItem.scheduledAt, false)}
-                            </span>
-                            <span className="text-sm text-gray-500">
-                              {formatTime(sessionItem.scheduledAt)}
-                            </span>
-                            <span className="text-sm text-gray-500">
-                              {sessionItem.durationMinutes} min
-                            </span>
-                          </div>
                         </div>
                       </div>
-                      
-                      {sessionItem.zoomJoinUrl && sessionItem.status === 'confirmed' && (
-                        <a
-                          href={sessionItem.zoomJoinUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
-                        >
-                          Join
-                        </a>
-                      )}
-                      
-                      {sessionItem.status === 'requested' && (
-                        <span className="px-3 py-1 bg-amber-100 text-amber-800 text-xs rounded-full font-medium">
-                          Pending
-                        </span>
-                      )}
                     </div>
-                  </div>
-                ))
-              )}
+                  ))
+                )}
+              </div>
             </div>
+
+            {/* Upcoming Chats */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                    <span className="text-indigo-600 text-sm font-semibold">📅</span>
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">Upcoming Chats</h2>
+                  <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded-full font-medium">
+                    {upcomingSessions.length}
+                  </span>
+                </div>
+              </div>
+              <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+                {upcomingSessions.length === 0 ? (
+                  <div className="px-6 py-12 text-center">
+                    <div className="text-gray-400 text-4xl mb-4">💬</div>
+                    <div className="text-gray-500 text-lg mb-2">No upcoming sessions</div>
+                    <p className="text-gray-400">Book your first chat with a professional!</p>
+                  </div>
+                ) : (
+                  upcomingSessions.map((sessionItem) => (
+                    <div key={sessionItem._id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          {(() => {
+                            const pro = (sessionItem as any).professional || (sessionItem as any).professionalId || sessionItem.professionalIdInfo;
+                            return (
+                              <div className={`w-12 h-12 ${getAvatarGradient(0)} rounded-full flex items-center justify-center text-white font-bold overflow-hidden`}>
+                                {pro?.profileImageUrl ? (
+                                  <img
+                                    src={pro.profileImageUrl}
+                                    alt={pro.name}
+                                    className="w-12 h-12 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  pro?.name?.charAt(0) || '?'
+                                )}
+                              </div>
+                            );
+                          })()}
+
+                          <div>
+                            {(() => {
+                              const pro = (sessionItem as any).professional || (sessionItem as any).professionalId || sessionItem.professionalIdInfo;
+                              return (
+                                <>
+                                  <h3 className="font-bold text-gray-900">
+                                    {pro?.name || 'Unknown'}
+                                  </h3>
+                                  <p className="text-sm text-gray-600">
+                                    {pro?.title} at {pro?.company}
+                                  </p>
+                                </>
+                              );
+                            })()}
+                            <div className="flex items-center space-x-4 mt-1">
+                              <span className="text-sm text-indigo-600 font-medium">
+                                {formatDate(sessionItem.scheduledAt, false)}
+                              </span>
+                              <span className="text-sm text-gray-500">
+                                {formatTime(sessionItem.scheduledAt)}
+                              </span>
+                              <span className="text-sm text-gray-500">
+                                {sessionItem.durationMinutes} min
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {sessionItem.zoomJoinUrl && sessionItem.status === 'confirmed' && (
+                          <a
+                            href={sessionItem.zoomJoinUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
+                          >
+                            Join
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
           </div>
 
           {/* Right Column - Mentor Search */}

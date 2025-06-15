@@ -27,11 +27,11 @@ export const GET = withAuthAndDB(async (
 
   const now = new Date();
 
-  // Fetch upcoming sessions (requested or confirmed, in the future)
+  // Fetch upcoming sessions (only confirmed and still in the future)
   const upcomingSessions = await Session.find({
     candidateId,
     scheduledAt: { $gte: now },
-    status: { $in: ['requested', 'confirmed'] }
+    status: 'confirmed'
   })
   .populate('professionalId', 'name title company profileImageUrl')
   .sort({ scheduledAt: 1 })
