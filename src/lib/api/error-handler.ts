@@ -63,10 +63,10 @@ export function withDB(
 
 // Combined wrapper for auth + DB
 export function withAuthAndDB(
-  handler: (request: NextRequest, context: RouteContext, session: Session) => Promise<NextResponse>,
+  handler: any,
   options: { requireRole?: 'candidate' | 'professional' } = {}
 ) {
-  return withDB(withAuth(handler, options));
+  return withDB(withAuth(handler as any, options) as any) as any;
 }
 
 // Error handling wrapper

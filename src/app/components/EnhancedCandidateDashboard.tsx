@@ -7,6 +7,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Modal from '@/components/ui/Modal';
 import Navigation from '@/components/ui/Navigation';
 import StripeCheckout from '@/components/ui/StripeCheckout';
+import AvailabilityGrid from '@/components/ui/AvailabilityGrid';
 
 interface Professional {
   _id: string;
@@ -85,7 +86,7 @@ export default function EnhancedCandidateDashboard() {
       const url = `/api/professional/search${params.toString() ? `?${params.toString()}` : ''}`;
       const prosResult = await apiRequest<{ professionals: Professional[] }>(url);
       if (prosResult.success) {
-        setProfessionals(prosResult.data?.data?.professionals || []);
+        setProfessionals(prosResult.data?.professionals || []);
       }
     } catch (error) {
       console.error('Error fetching professionals:', error);
@@ -116,10 +117,10 @@ export default function EnhancedCandidateDashboard() {
           }));
 
         const upcomingNormalized = normalize(
-          sessionsResult.data.data.upcoming || []
+          sessionsResult.data.upcoming || []
         );
         const pendingNormalized = normalize(
-          sessionsResult.data.data.pending || []
+          sessionsResult.data.pending || []
         );
 
         // API now returns only confirmed upcoming sessions
@@ -146,6 +147,12 @@ export default function EnhancedCandidateDashboard() {
       fetchProfessionals();
     }
   }, [filters, searchQuery, session, fetchProfessionals]);
+
+  useEffect(() => {
+    if (showBookingModal) {
+      fetchDefaultAvailability();
+    }
+  }, [showBookingModal]);
 
   const filterProfessionals = useCallback(() => {
     let filtered = professionals;
@@ -201,70 +208,34 @@ export default function EnhancedCandidateDashboard() {
   }, [filterProfessionals]);
 
   // Add these state variables after the existing useState declarations (around line 45)
-  const [selectedDateTime, setSelectedDateTime] = useState<Date | null>(null);
+  const [availability, setAvailability] = useState<Set<string>>(new Set());
   const [bookingStep, setBookingStep] = useState<'datetime' | 'checkout'>('datetime');
 
-  const generateAvailableSlots = () => {
-    const slots = [];
-    const now = new Date();
-    const startDate = new Date(now.getTime() + 24 * 60 * 60 * 1000); // Start tomorrow
-    
-    // Generate next 7 days of slots
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
-      
-      // Skip weekends for business hours
-      if (date.getDay() === 0 || date.getDay() === 6) continue;
-      
-      // Morning slot (10 AM)
-      const morningSlot = new Date(date);
-      morningSlot.setHours(10, 0, 0, 0);
-      slots.push({
-        date: morningSlot,
-        dayLabel: date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-        timeLabel: '10:00 AM'
-      });
-      
-      // Afternoon slot (2 PM)
-      const afternoonSlot = new Date(date);
-      afternoonSlot.setHours(14, 0, 0, 0);
-      slots.push({
-        date: afternoonSlot,
-        dayLabel: date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-        timeLabel: '2:00 PM'
-      });
-      
-      // Only show first 6 slots to keep UI clean
-      if (slots.length >= 6) break;
-    }
-    
-    return slots;
-  };
-
-  const generateTimeOptions = () => {
-    const options = [];
-    
-    // Business hours: 9 AM to 9 PM
-    for (let hour = 9; hour <= 21; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        const time24 = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        
-        const date = new Date();
-        date.setHours(hour, minute, 0, 0);
-        const time12 = date.toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true
+  const fetchDefaultAvailability = async () => {
+    try {
+      const result = await apiRequest<{ calendars: Record<string, { busy: { start: string; end: string }[] }> }>(
+        '/api/calendar/freebusy'
+      );
+      const busy = result.success ? result.data?.calendars?.primary?.busy || [] : [];
+      const start = new Date();
+      start.setHours(8,0,0,0);
+      const end = new Date(start.getTime() + 14 * 24 * 60 * 60 * 1000);
+      const newAvail = new Set<string>();
+      for (let d = new Date(start); d < end; d.setMinutes(d.getMinutes() + 30)) {
+        const slotStart = new Date(d);
+        const slotEnd = new Date(d.getTime() + 30*60000);
+        const conflict = busy.some(b => {
+          const bs = new Date(b.start); const be = new Date(b.end);
+          return slotStart < be && slotEnd > bs;
         });
-        
-        options.push({
-          value: time24,
-          label: time12
-        });
+        if (!conflict && slotStart.getHours() >= 8 && slotStart.getHours() < 20) {
+          newAvail.add(slotStart.toISOString());
+        }
       }
+      setAvailability(newAvail);
+    } catch (err) {
+      console.error('Failed to fetch calendar availability', err);
     }
-    
-    return options;
   };
 
   const handleViewProfile = (professional: Professional) => {
@@ -656,7 +627,7 @@ export default function EnhancedCandidateDashboard() {
           isOpen={showBookingModal}
           onClose={() => {
             setShowBookingModal(false);
-            setSelectedDateTime(null);
+            setAvailability(new Set());
             setBookingStep('datetime');
           }}
           title={selectedPro ? `Book Session with ${selectedPro.name}` : ''}
@@ -694,90 +665,15 @@ export default function EnhancedCandidateDashboard() {
                   <div>
                     <h4 className="text-lg font-bold text-gray-900 mb-4">Select Date & Time</h4>
                     
-                    {/* Quick Time Slots */}
                     <div className="mb-6">
-                      <p className="text-sm text-gray-600 mb-3">Available this week:</p>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {generateAvailableSlots().map((slot, index) => (
-                          <button
-                            key={index}
-                            onClick={() => setSelectedDateTime(slot.date)}
-                            className={`p-3 text-left border-2 rounded-lg transition-all duration-200 ${
-                              selectedDateTime?.getTime() === slot.date.getTime()
-                                ? 'border-indigo-600 bg-indigo-50'
-                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                            }`}
-                          >
-                            <div className="font-medium text-gray-900">{slot.dayLabel}</div>
-                            <div className="text-sm text-gray-600">{slot.timeLabel}</div>
-                          </button>
-                        ))}
-                      </div>
+                      <p className="text-sm text-gray-600 mb-3">Select your availability (shift-click for ranges)</p>
+                      <AvailabilityGrid
+                        startDate={new Date()}
+                        days={14}
+                        initialSelected={availability}
+                        onChange={setAvailability}
+                      />
                     </div>
-
-                    {/* Custom Date/Time Input */}
-                    <div className="border-t border-gray-200 pt-4">
-                      <p className="text-sm text-gray-600 mb-3">Or choose a specific time:</p>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
-                          <input
-                            type="date"
-                            min={new Date().toISOString().split('T')[0]}
-                            max={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
-                            onChange={(e) => {
-                              if (e.target.value) {
-                                const date = new Date(e.target.value + 'T10:00:00');
-                                setSelectedDateTime(date);
-                              }
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Time</label>
-                          <select
-                            onChange={(e) => {
-                              if (selectedDateTime && e.target.value) {
-                                const [hours, minutes] = e.target.value.split(':').map(Number);
-                                const newDate = new Date(selectedDateTime);
-                                newDate.setHours(hours, minutes, 0, 0);
-                                setSelectedDateTime(newDate);
-                              }
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                          >
-                            <option value="">Select time</option>
-                            {generateTimeOptions().map(time => (
-                              <option key={time.value} value={time.value}>{time.label}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-
-                    {selectedDateTime && (
-                      <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                        <div className="flex items-start space-x-3">
-                          <div className="text-green-500 mt-0.5">✓</div>
-                          <div>
-                            <h5 className="font-semibold text-green-900">Selected Time</h5>
-                            <p className="text-green-800">
-                              {selectedDateTime.toLocaleDateString('en-US', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                              })} at {selectedDateTime.toLocaleTimeString('en-US', {
-                                hour: 'numeric',
-                                minute: '2-digit',
-                                hour12: true
-                              })}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   {/* Action Buttons */}
@@ -785,7 +681,7 @@ export default function EnhancedCandidateDashboard() {
                     <button
                       onClick={() => {
                         setShowBookingModal(false);
-                        setSelectedDateTime(null);
+                        setAvailability(new Set());
                       }}
                       className="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition-colors"
                     >
@@ -793,7 +689,7 @@ export default function EnhancedCandidateDashboard() {
                     </button>
                     <button
                       onClick={() => setBookingStep('checkout')}
-                      disabled={!selectedDateTime}
+                      disabled={availability.size === 0}
                       className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold transition-colors"
                     >
                       Continue to Payment
@@ -802,13 +698,13 @@ export default function EnhancedCandidateDashboard() {
                 </div>
               )}
 
-              {bookingStep === 'checkout' && selectedDateTime && (
+              {bookingStep === 'checkout' && (
                 <StripeCheckout
                   professional={selectedPro}
-                  selectedDateTime={selectedDateTime}
+                  availability={Array.from(availability).map(start => ({ start: new Date(start), end: new Date(new Date(start).getTime() + 30*60000) }))}
                   onSuccess={(sessionData) => {
                     setShowBookingModal(false);
-                    setSelectedDateTime(null);
+                    setAvailability(new Set());
                     setBookingStep('datetime');
                     
                     // Show success message

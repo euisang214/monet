@@ -49,8 +49,7 @@ export const GET = withDB(async (
   // Get pending sessions (requested but not yet confirmed)
   const pendingSessions = await Session.find({
     professionalId,
-    status: 'requested',
-    scheduledAt: { $gte: now }
+    status: 'requested'
   })
   .populate('candidate', 'name email targetRole targetIndustry resumeUrl')
   .sort({ createdAt: 1 })

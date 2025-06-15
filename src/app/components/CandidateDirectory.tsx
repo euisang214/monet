@@ -42,7 +42,7 @@ export default function CandidateDirectory() {
       const result = await apiRequest<{ candidates: Candidate[] }>(url);
       if (result.success) {
         console.log("Sucess");
-        setCandidates(result.data?.data?.candidates || []);
+        setCandidates(result.data?.candidates || []);
       }
     } catch (error) {
       console.error('Error fetching candidates:', error);

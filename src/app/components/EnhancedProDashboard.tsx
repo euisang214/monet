@@ -7,15 +7,17 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Modal from '@/components/ui/Modal';
 import Navigation from '@/components/ui/Navigation';
 import CandidateDirectory from '@/app/components/CandidateDirectory';
+import AvailabilityGrid from '@/components/ui/AvailabilityGrid';
 
 interface Session {
   _id: string;
   candidateId: string;
-  scheduledAt: string;
+  scheduledAt?: string;
   durationMinutes: number;
   rateCents: number;
   status: 'requested' | 'confirmed' | 'completed' | 'cancelled';
   zoomJoinUrl?: string;
+  candidateAvailability?: { start: string; end: string }[];
   candidate?: {
     name: string;
     email: string;
@@ -65,6 +67,7 @@ export default function EnhancedProDashboard() {
   
   const [loading, setLoading] = useState(true);
   const [feedbackModal, setFeedbackModal] = useState<Session | null>(null);
+  const [acceptModal, setAcceptModal] = useState<Session | null>(null);
   const [feedbackForm, setFeedbackForm] = useState<FeedbackForm>({
     culturalFitRating: 3,
     interestRating: 3,
@@ -126,26 +129,8 @@ export default function EnhancedProDashboard() {
     }
   };
 
-  const handleAcceptRequest = async (sessionId: string) => {
-    if (!session?.user?.id) return;
-
-    try {
-      const result = await apiRequest<{ message: string }>(
-        `/api/sessions/${sessionId}/confirm`, {
-          method: 'POST',
-          body: JSON.stringify({
-            professionalId: session.user.id,
-            action: 'accept'
-          })
-        }
-      );
-
-      if (result.success) {
-        await fetchDashboardData();
-      }
-    } catch (error) {
-      console.error('Error accepting request:', error);
-    }
+  const handleAcceptRequest = (sessionItem: Session) => {
+    setAcceptModal(sessionItem);
   };
 
   const handleSubmitFeedback = async (sessionId: string) => {
@@ -277,7 +262,7 @@ export default function EnhancedProDashboard() {
                             return (
                               <>
                                 <h3 className="font-semibold text-gray-900">{cand?.name || 'Unknown'}</h3>
-                                <p className="text-sm text-gray-600">{formatDate(sessionItem.scheduledAt)}</p>
+                                <p className="text-sm text-gray-600">{formatDate(sessionItem.scheduledAt || '')}</p>
                               </>
                             );
                           })()}
@@ -363,14 +348,14 @@ export default function EnhancedProDashboard() {
                                 return (
                                   <>
                                     <h4 className="font-medium text-gray-900 text-sm">{cand?.name || 'Unknown'}</h4>
-                                    <p className="text-xs text-gray-600">{formatDate(sessionItem.scheduledAt)}</p>
+                                    <p className="text-xs text-gray-600">{formatDate(sessionItem.scheduledAt || '')}</p>
                                   </>
                                 );
                               })()}
                             </div>
                           </div>
                           <button
-                            onClick={() => handleAcceptRequest(sessionItem._id)}
+                            onClick={() => handleAcceptRequest(sessionItem)}
                             className="px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded hover:bg-green-700"
                           >
                             Accept
@@ -415,14 +400,14 @@ export default function EnhancedProDashboard() {
                                 return (
                                   <>
                                     <h4 className="font-medium text-gray-900 text-sm">{cand?.name || 'Unknown'}</h4>
-                                    <p className="text-xs text-gray-600">Referred • {formatDate(sessionItem.scheduledAt, false)}</p>
+                                    <p className="text-xs text-gray-600">Referred • {formatDate(sessionItem.scheduledAt || '', false)}</p>
                                   </>
                                 );
                               })()}
                             </div>
                           </div>
                           <button
-                            onClick={() => handleAcceptRequest(sessionItem._id)}
+                            onClick={() => handleAcceptRequest(sessionItem)}
                             className="px-3 py-1 bg-purple-600 text-white text-xs font-semibold rounded hover:bg-purple-700"
                           >
                             Accept
@@ -507,7 +492,7 @@ export default function EnhancedProDashboard() {
                               return (
                                 <>
                                   <h4 className="font-medium text-gray-900">{cand?.name || 'Unknown'}</h4>
-                                  <p className="text-sm text-gray-600">{formatDate(sessionItem.scheduledAt, false)}</p>
+                                  <p className="text-sm text-gray-600">{formatDate(sessionItem.scheduledAt || '', false)}</p>
                                 </>
                               );
                             })()}
@@ -559,7 +544,7 @@ export default function EnhancedProDashboard() {
                               return (
                                 <>
                                   <h4 className="font-medium text-gray-900">{cand?.name || 'Unknown'}</h4>
-                                  <p className="text-sm text-gray-600">{formatDate(sessionItem.scheduledAt, false)} • ${(sessionItem.rateCents / 100).toFixed(0)}</p>
+                                  <p className="text-sm text-gray-600">{formatDate(sessionItem.scheduledAt || '', false)} • ${(sessionItem.rateCents / 100).toFixed(0)}</p>
                                 </>
                               );
                             })()}
@@ -573,15 +558,60 @@ export default function EnhancedProDashboard() {
               </div>
             </div>
             
-          </div>
         </div>
+      </div>
 
-        {/* Feedback Modal */}
+      {/* Accept Modal */}
+      <Modal
+        isOpen={!!acceptModal}
+        onClose={() => setAcceptModal(null)}
+        title={acceptModal ? `Select Time for ${(acceptModal as any).candidate?.name || (acceptModal as any).candidateIdInfo?.name || 'Candidate'}` : ''}
+        subtitle="Choose a time from candidate's availability"
+        maxWidth="lg"
+        actions={
+          <></>
+        }
+      >
+        {acceptModal && (
+          <div className="space-y-4">
+            <AvailabilityGrid
+              startDate={new Date()}
+              days={14}
+              initialSelected={new Set(acceptModal.candidateAvailability?.map(a => new Date(a.start).toISOString()))}
+              onChange={() => {}}
+            />
+            <div className="mt-4 flex flex-wrap gap-2">
+              {acceptModal.candidateAvailability?.map((a,i)=>{
+                const start = new Date(a.start);
+                return (
+                  <button
+                    key={i}
+                    onClick={async ()=>{
+                      if(!session?.user?.id) return;
+                      await apiRequest(`/api/sessions/${acceptModal._id}/confirm`, {
+                        method:'POST',
+                        body: JSON.stringify({ professionalId: session.user.id, action:'accept', scheduledAt: start.toISOString() })
+                      });
+                      setAcceptModal(null);
+                      fetchDashboardData();
+                    }}
+                    className="px-2 py-1 bg-indigo-600 text-white text-xs rounded"
+                  >
+                    {start.toLocaleString([], {weekday:'short', hour:'numeric', minute:'2-digit'})}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Feedback Modal */}
         <Modal
           isOpen={!!feedbackModal}
           onClose={() => setFeedbackModal(null)}
-          title={feedbackModal ? `Submit Feedback for ${(feedbackModal as any).candidate?.name || (feedbackModal as any).candidateIdInfo?.name || (feedbackModal as any).candidateId?.name || 'Candidate'}` : ''}
-          subtitle={feedbackModal ? `Session on ${formatLongDate(feedbackModal.scheduledAt)}` : ''}
+        title={feedbackModal ? `Submit Feedback for ${(feedbackModal as any).candidate?.name || (feedbackModal as any).candidateIdInfo?.name || (feedbackModal as any).candidateId?.name || 'Candidate'}` : ''}
+        subtitle={feedbackModal ? `Session on ${formatLongDate(feedbackModal.scheduledAt || '')}` : ''}
           maxWidth="3xl"
           actions={
             <>
@@ -624,7 +654,7 @@ export default function EnhancedProDashboard() {
                     return (
                       <>
                         <h4 className="text-lg font-semibold text-gray-900">{cand?.name || 'Candidate'}</h4>
-                        <p className="text-gray-600">Session on {formatLongDate(feedbackModal.scheduledAt)}</p>
+                          <p className="text-gray-600">Session on {formatLongDate(feedbackModal.scheduledAt || '')}</p>
                       </>
                     );
                   })()}

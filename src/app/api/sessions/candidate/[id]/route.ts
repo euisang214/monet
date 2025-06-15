@@ -56,8 +56,7 @@ export const GET = withAuthAndDB(async (
   // Get pending sessions (requested but not yet confirmed)
   const pendingSessions = await Session.find({
     candidateId,
-    status: 'requested',
-    scheduledAt: { $gte: now }
+    status: 'requested'
   })
   .populate('professionalId', 'name title company profileImageUrl')
   .sort({ createdAt: 1 })

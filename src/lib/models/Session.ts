@@ -9,11 +9,15 @@ export interface ISession extends Document {
   professionalId: string;
   firmId: string;
   referrerProId?: string;
-  scheduledAt: Date;
+  scheduledAt?: Date;
   durationMinutes: number;
   rateCents: number;
   status: "requested" | "confirmed" | "completed" | "cancelled";
   requestMessage?: string;
+  candidateAvailability?: Array<{
+    start: Date;
+    end: Date;
+  }>;
   cancelReason?: string;
   zoomJoinUrl?: string;
   zoomMeetingId?: string;
@@ -34,7 +38,7 @@ const SessionSchema = new Schema<ISession>(
     professionalId: { type: String, ref: "User", required: true },
     firmId: { type: String, required: true, trim: true },
     referrerProId: { type: String, ref: "User" },
-    scheduledAt: { type: Date, required: true },
+    scheduledAt: { type: Date },
     durationMinutes: { type: Number, default: 30, min: 1 },
     rateCents: { type: Number, required: true, min: 0 },
     status: {
@@ -43,6 +47,12 @@ const SessionSchema = new Schema<ISession>(
       default: "requested",
     },
     requestMessage: { type: String, trim: true, maxlength: 500 },
+    candidateAvailability: [
+      {
+        start: { type: Date, required: true },
+        end: { type: Date, required: true },
+      },
+    ],
     cancelReason: { type: String, trim: true },
     zoomJoinUrl: { type: String, trim: true },
     zoomMeetingId: { type: String, trim: true },
