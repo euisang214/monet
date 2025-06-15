@@ -5,7 +5,7 @@ import { connectDB } from '@/lib/models/db';
 import User from '@/lib/models/User';
 
 interface SwitchRoleRequest {
-  userId: string;
+  userId?: string; // userId is optional, session user.id will be used
   newRole: 'candidate' | 'professional';
 }
 
@@ -18,19 +18,17 @@ export const POST = withAuth(async (request: NextRequest, context, session: Sess
   
   // Validate request body
   const validation = await validateRequestBody<SwitchRoleRequest>(request, [
-    'userId', 'newRole'
+    'newRole'
   ]);
   
   if (!validation.isValid) {
     return errorResponse(validation.error!, 400);
   }
   
-  const { userId, newRole } = validation.data!;
+  const { newRole } = validation.data!;
 
-  // Verify the user ID matches the session
-  if (userId !== session.user.id) {
-    return errorResponse('Unauthorized', 403);
-  }
+  // Ensure we use the authenticated user's ID from the session
+  const userId = session.user.id;
 
   // Validate new role
   if (!['candidate', 'professional'].includes(newRole)) {
