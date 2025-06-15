@@ -61,7 +61,7 @@ export default function ProfessionalDirectory() {
       const url = `/api/professional/search${params.toString() ? `?${params.toString()}` : ''}`;
       const result = await apiRequest<{ professionals: Professional[] }>(url);
       if (result.success) {
-        setProfessionals(result.data?.professionals || []);
+        setProfessionals(result.data?.data?.professionals || []);
       };
     } catch (error) {
       console.error('Error fetching professionals:', error);
@@ -74,15 +74,7 @@ export default function ProfessionalDirectory() {
     if (isAuthenticated) {
       fetchProfessionals();
     }
-  }, [isAuthenticated, fetchProfessionals]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchProfessionals();
-    }
   }, [filters, searchQuery, isAuthenticated, fetchProfessionals]);
-
-
 
   const handleBookSession = (professional: Professional) => {
     setSelectedPro(professional);
@@ -109,6 +101,8 @@ export default function ProfessionalDirectory() {
   if (!isAuthenticated) {
     return null;
   }
+
+  console.log(professionals);
 
   return (
     <div className="min-h-screen bg-gray-50">

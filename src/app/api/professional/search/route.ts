@@ -67,8 +67,6 @@ export const GET = withDB(async (request: NextRequest) => {
     .sort({ sessionRateCents: 1 }) // Sort by rate (ascending)
     .lean();
 
-  log(professionals);
-
   // Enrich with ratings and session count
   const enrichedProfessionals = await Promise.all(
     professionals.map(async (pro) => {
