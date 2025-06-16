@@ -55,24 +55,27 @@ export default function AvailabilityGrid({ startDate, days, initialSelected, onC
   const maxTime = setHours(setMinutes(startOfDay(new Date()), 0), 20);
   const maxDate = addDays(startDate, days - 1);
 
-  const handleSelectSlot = ({ start }: SlotInfo) => {
-    const rounded = setMinutes(start, start.getMinutes() < 30 ? 0 : 30);
-    const iso = new Date(rounded.setSeconds(0, 0)).toISOString();
-    const exists = events.find((e) => e.id === iso);
-    let next: AvailabilityEvent[];
-    if (exists) {
-      next = events.filter((e) => e.id !== iso);
-    } else {
-      next = [
-        ...events,
-        {
+  const handleSelectSlot = ({ start, end }: SlotInfo) => {
+    const startRounded = setMinutes(start, start.getMinutes() < 30 ? 0 : 30);
+    const endRounded = setMinutes(end, end.getMinutes() < 30 ? 0 : 30);
+
+    const next = [...events];
+    for (let d = new Date(startRounded); d < endRounded; d = new Date(d.getTime() + 30 * 60000)) {
+      const slot = new Date(d.setSeconds(0, 0));
+      const iso = slot.toISOString();
+      const idx = next.findIndex((e) => e.id === iso);
+      if (idx >= 0) {
+        next.splice(idx, 1);
+      } else {
+        next.push({
           id: iso,
           title: 'Available',
           start: new Date(iso),
           end: new Date(new Date(iso).getTime() + 30 * 60000),
-        },
-      ];
+        });
+      }
     }
+
     setEvents(next);
     onChange?.(new Set(next.map((e) => e.start.toISOString())));
   };
