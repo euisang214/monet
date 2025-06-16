@@ -259,6 +259,7 @@ export async function apiRequest<T>(
         ...options.headers,
       },
       credentials: 'include',
+      cache: 'no-store',
       ...options,
     });
 
