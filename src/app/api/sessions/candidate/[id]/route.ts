@@ -1,4 +1,7 @@
 import { NextRequest } from 'next/server';
+
+// Mark this route as dynamic to prevent caching per-user results
+export const dynamic = 'force-dynamic';
 import { withAuthAndDB, errorResponse } from '@/lib/api/error-handler';
 import type { Session as AuthSession } from 'next-auth';
 import { getCandidateSessions } from '@/lib/api/candidate-sessions';
