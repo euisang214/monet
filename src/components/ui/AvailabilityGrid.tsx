@@ -30,7 +30,12 @@ interface Props {
   onChange?: (slots: Set<string>) => void;
 }
 
-type AvailabilityEvent = Event & { id: string };
+type AvailabilityEvent = {
+  id: string;
+  title: string;
+  start: Date;
+  end: Date;
+};
 const locales = {
   'en-US': enUS,
 };

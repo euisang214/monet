@@ -26,7 +26,7 @@ interface Professional {
 
 interface Session {
   _id: string;
-  professionalId: string;
+  professionalId: string | Professional;
   scheduledAt: string;
   durationMinutes: number;
   rateCents: number;
@@ -297,23 +297,37 @@ export default function EnhancedCandidateDashboard() {
                     <div key={sessionItem._id} className="px-6 py-3 hover:bg-gray-50 transition-colors">
                       <div className="flex items-center space-x-4">
                         {(() => {
-                          const pro = sessionItem.professional || sessionItem.professionalId || sessionItem.professionalIdInfo;
+                          const pro =
+                            sessionItem.professional ||
+                            sessionItem.professionalId ||
+                            sessionItem.professionalIdInfo;
+                          const proObj = typeof pro === 'string' ? undefined : pro;
                           return (
-                            <div className={`w-10 h-10 ${getAvatarGradient(0)} rounded-full flex items-center justify-center text-white font-bold overflow-hidden`}>
-                              {pro?.profileImageUrl ? (
-                                <img src={pro.profileImageUrl} alt={pro.name} className="w-10 h-10 rounded-full object-cover" />
+                            <div
+                              className={`w-10 h-10 ${getAvatarGradient(0)} rounded-full flex items-center justify-center text-white font-bold overflow-hidden`}
+                            >
+                              {proObj?.profileImageUrl ? (
+                                <img
+                                  src={proObj.profileImageUrl}
+                                  alt={proObj.name}
+                                  className="w-10 h-10 rounded-full object-cover"
+                                />
                               ) : (
-                                pro?.name?.charAt(0) || '?'
+                                proObj?.name?.charAt(0) || (typeof pro === 'string' ? pro.charAt(0) : '?')
                               )}
                             </div>
                           );
                         })()}
                         <div>
                           {(() => {
-                            const pro = sessionItem.professional || sessionItem.professionalId || sessionItem.professionalIdInfo;
+                            const pro =
+                              sessionItem.professional ||
+                              sessionItem.professionalId ||
+                              sessionItem.professionalIdInfo;
+                            const proObj = typeof pro === 'string' ? undefined : pro;
                             return (
                               <>
-                                <h4 className="font-medium text-gray-900 text-sm">{pro?.name || 'Unknown'}</h4>
+                                <h4 className="font-medium text-gray-900 text-sm">{proObj?.name || (typeof pro === 'string' ? pro : 'Unknown')}</h4>
                                 <p className="text-xs text-gray-600">{formatDate(sessionItem.scheduledAt)}</p>
                               </>
                             );
@@ -352,17 +366,23 @@ export default function EnhancedCandidateDashboard() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
                           {(() => {
-                            const pro = sessionItem.professional || sessionItem.professionalId || sessionItem.professionalIdInfo;
+                            const pro =
+                              sessionItem.professional ||
+                              sessionItem.professionalId ||
+                              sessionItem.professionalIdInfo;
+                            const proObj = typeof pro === 'string' ? undefined : pro;
                             return (
-                              <div className={`w-12 h-12 ${getAvatarGradient(0)} rounded-full flex items-center justify-center text-white font-bold overflow-hidden`}>
-                                {pro?.profileImageUrl ? (
+                              <div
+                                className={`w-12 h-12 ${getAvatarGradient(0)} rounded-full flex items-center justify-center text-white font-bold overflow-hidden`}
+                              >
+                                {proObj?.profileImageUrl ? (
                                   <img
-                                    src={pro.profileImageUrl}
-                                    alt={pro.name}
+                                    src={proObj.profileImageUrl}
+                                    alt={proObj.name}
                                     className="w-12 h-12 rounded-full object-cover"
                                   />
                                 ) : (
-                                  pro?.name?.charAt(0) || '?'
+                                  proObj?.name?.charAt(0) || (typeof pro === 'string' ? pro.charAt(0) : '?')
                                 )}
                               </div>
                             );
@@ -370,14 +390,18 @@ export default function EnhancedCandidateDashboard() {
 
                           <div>
                             {(() => {
-                              const pro = sessionItem.professional || sessionItem.professionalId || sessionItem.professionalIdInfo;
+                              const pro =
+                                sessionItem.professional ||
+                                sessionItem.professionalId ||
+                                sessionItem.professionalIdInfo;
+                              const proObj = typeof pro === 'string' ? undefined : pro;
                               return (
                                 <>
                                   <h3 className="font-bold text-gray-900">
-                                    {pro?.name || 'Unknown'}
+                                    {proObj?.name || (typeof pro === 'string' ? pro : 'Unknown')}
                                   </h3>
                                   <p className="text-sm text-gray-600">
-                                    {pro?.title} at {pro?.company}
+                                    {proObj?.title} at {proObj?.company}
                                   </p>
                                 </>
                               );
