@@ -32,18 +32,8 @@ interface Session {
   rateCents: number;
   status: 'requested' | 'confirmed' | 'completed' | 'cancelled';
   zoomJoinUrl?: string;
-  professional?: {
-    name: string;
-    title: string;
-    company: string;
-    profileImageUrl?: string;
-  };
-  professionalIdInfo?: {
-    name: string;
-    title: string;
-    company: string;
-    profileImageUrl?: string;
-  };
+  professional?: Professional | string;
+  professionalIdInfo?: Professional | string;
 }
 
 interface SearchFilters {
@@ -105,8 +95,8 @@ export default function EnhancedCandidateDashboard() {
 
       if (sessionsResult.success && sessionsResult.data) {
         console.log(sessionsResult);
-        const normalize = (arr: any[]) =>
-          arr.map((s: any) => ({
+        const normalize = (arr: Session[]) =>
+          arr.map((s: Session) => ({
             ...s,
             professional: s.professional || s.professionalId,
             professionalIdInfo: s.professionalId,
@@ -307,7 +297,7 @@ export default function EnhancedCandidateDashboard() {
                     <div key={sessionItem._id} className="px-6 py-3 hover:bg-gray-50 transition-colors">
                       <div className="flex items-center space-x-4">
                         {(() => {
-                          const pro = (sessionItem as any).professional || (sessionItem as any).professionalId || sessionItem.professionalIdInfo;
+                          const pro = sessionItem.professional || sessionItem.professionalId || sessionItem.professionalIdInfo;
                           return (
                             <div className={`w-10 h-10 ${getAvatarGradient(0)} rounded-full flex items-center justify-center text-white font-bold overflow-hidden`}>
                               {pro?.profileImageUrl ? (
@@ -320,7 +310,7 @@ export default function EnhancedCandidateDashboard() {
                         })()}
                         <div>
                           {(() => {
-                            const pro = (sessionItem as any).professional || (sessionItem as any).professionalId || sessionItem.professionalIdInfo;
+                            const pro = sessionItem.professional || sessionItem.professionalId || sessionItem.professionalIdInfo;
                             return (
                               <>
                                 <h4 className="font-medium text-gray-900 text-sm">{pro?.name || 'Unknown'}</h4>
@@ -362,7 +352,7 @@ export default function EnhancedCandidateDashboard() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
                           {(() => {
-                            const pro = (sessionItem as any).professional || (sessionItem as any).professionalId || sessionItem.professionalIdInfo;
+                            const pro = sessionItem.professional || sessionItem.professionalId || sessionItem.professionalIdInfo;
                             return (
                               <div className={`w-12 h-12 ${getAvatarGradient(0)} rounded-full flex items-center justify-center text-white font-bold overflow-hidden`}>
                                 {pro?.profileImageUrl ? (
@@ -380,7 +370,7 @@ export default function EnhancedCandidateDashboard() {
 
                           <div>
                             {(() => {
-                              const pro = (sessionItem as any).professional || (sessionItem as any).professionalId || sessionItem.professionalIdInfo;
+                              const pro = sessionItem.professional || sessionItem.professionalId || sessionItem.professionalIdInfo;
                               return (
                                 <>
                                   <h3 className="font-bold text-gray-900">
