@@ -806,7 +806,7 @@ export default function ProfileEditPage() {
           {/* Action Buttons */}
           <div className="mt-8 pt-6 border-t border-gray-200 flex justify-between">
             <Link
-              href={isCandidate ? '/candidate/dashboard' : '/professional/dashboard'}
+              href="/dashboard"
               className="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition-colors"
             >
               Cancel

@@ -173,7 +173,7 @@ export default function CandidateProfilePage() {
       if (result.success) {
         // Successful submission - redirect to candidate dashboard
         console.log('Profile completed successfully, redirecting to dashboard');
-        router.push('/candidate/dashboard');
+        router.push('/dashboard');
       } else {
         // API returned an error - preserve form state and show error
         const errorMessage = result.error || 'Failed to save profile. Please try again.';

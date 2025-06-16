@@ -219,7 +219,7 @@ export default function ProfessionalProfilePage() {
         } else {
           // Redirect to professional dashboard
           console.log('Profile completed successfully, redirecting to dashboard');
-          router.push('/professional/dashboard');
+          router.push('/dashboard');
         }
       } else {
         // API returned an error - preserve form state and show error
