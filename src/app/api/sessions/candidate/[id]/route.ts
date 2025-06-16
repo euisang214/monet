@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { withAuthAndDB, errorResponse } from '@/lib/api/error-handler';
 import type { Session as AuthSession } from 'next-auth';
-import { getCandidateSessions } from '../route';
+import { getCandidateSessions } from '@/lib/api/candidate-sessions';
 
 /**
  * GET /api/sessions/candidate/[id]
