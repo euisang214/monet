@@ -35,8 +35,16 @@ export const POST = withAuth(async (request: NextRequest, context, session: Sess
     return errorResponse('Invalid role', 400);
   }
 
-  // Get user
-  const user = await User.findById(userId);
+  // Get user by id; fallback to email in case session id is stale
+  let user = await User.findById(userId);
+  if (!user && session.user.email) {
+    user = await User.findOne({ email: session.user.email });
+    if (user) {
+      console.warn(
+        `User id ${userId} not found, falling back to email ${session.user.email}`
+      );
+    }
+  }
   if (!user) {
     return errorResponse('User not found', 404);
   }
@@ -86,8 +94,11 @@ export const GET = withAuth(async (request: NextRequest, context, session: Sessi
   
   const userId = session.user.id;
   
-  // Get user
-  const user = await User.findById(userId);
+  // Get user by id; fallback to email
+  let user = await User.findById(userId);
+  if (!user && session.user.email) {
+    user = await User.findOne({ email: session.user.email });
+  }
   if (!user) {
     return errorResponse('User not found', 404);
   }
