@@ -178,7 +178,7 @@ export const POST = withAuth(async (request: NextRequest, context, session: Sess
       const accountLink = await stripe.accountLinks.create({
         account: stripeAccount.id,
         refresh_url: `${process.env.NEXTAUTH_URL}/auth/setup/professional?refresh=true`,
-        return_url: `${process.env.NEXTAUTH_URL}/professional/dashboard`,
+        return_url: `${process.env.NEXTAUTH_URL}/dashboard`,
         type: 'account_onboarding'
       });
 
