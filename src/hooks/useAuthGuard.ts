@@ -4,7 +4,6 @@ import { useSession } from 'next-auth/react';
 import type { Session } from 'next-auth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { log } from 'console';
 
 interface AuthGuardOptions {
   requiredRole?: 'candidate' | 'professional';

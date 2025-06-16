@@ -2,8 +2,9 @@ import { NextRequest } from 'next/server';
 import { withAuthAndDB, errorResponse, successResponse } from '@/lib/api/error-handler';
 import User from '@/lib/models/User';
 import { getFreeBusyInfo } from '@/lib/calendar';
+import type { Session as AuthSession } from 'next-auth';
 
-export const GET = withAuthAndDB(async (request: NextRequest, context: unknown, session: any) => {
+export const GET = withAuthAndDB(async (request: NextRequest, context: unknown, session: AuthSession) => {
   const user = await User.findById(session.user.id);
   if (!user) {
     return errorResponse('User not found', 404);

@@ -23,9 +23,11 @@ export function successResponse<T>(data: T, message?: string) {
 
 // Authentication wrapper
 export function withAuth(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   handler: (request: NextRequest, context: { params: any }, session: Session) => Promise<NextResponse>,
   options: { requireRole?: 'candidate' | 'professional' } = {}
 ) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return async (request: NextRequest, context: { params: any }) => {
     try {
       const session = await getServerSession(authOptions);
@@ -63,9 +65,11 @@ export function withDB(
 
 // Combined wrapper for auth + DB
 export function withAuthAndDB(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   handler: any,
   options: { requireRole?: 'candidate' | 'professional' } = {}
 ) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return withDB(withAuth(handler as any, options) as any) as any;
 }
 
