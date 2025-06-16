@@ -7,7 +7,7 @@ import type { Session as AuthSession } from 'next-auth';
  * GET /api/sessions/candidate
  * Fetch all sessions for the currently authenticated candidate
  */
-export async function getCandidateSessions(session: AuthSession) {
+async function getCandidateSessions(session: AuthSession) {
   const candidateId = session.user.id;
   const now = new Date();
 

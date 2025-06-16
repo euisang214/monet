@@ -3,7 +3,6 @@ import { withDB, successResponse } from '@/lib/api/error-handler';
 import User from '@/lib/models/User';
 import { CandidateRating } from '@/lib/models/Feedback';
 import Session from '@/lib/models/Session';
-import { log } from 'console';
 
 /**
  * GET /api/professional/search

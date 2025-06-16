@@ -24,14 +24,14 @@ interface Session {
     targetRole?: string;
     targetIndustry?: string;
     profileImageUrl?: string;
-  };
+  } | string;
   candidateIdInfo?: {
     name: string;
     email: string;
     targetRole?: string;
     targetIndustry?: string;
     profileImageUrl?: string;
-  };
+  } | string;
   feedbackSubmittedAt?: string;
   referrerProId?: string;
 }
@@ -96,8 +96,8 @@ export default function EnhancedProDashboard() {
       if (result.success && result.data) {
         const { upcoming, completed, pending } = result.data;
 
-        const normalize = (arr: any[]) =>
-          arr.map((s: any) => ({
+        const normalize = (arr: Session[]) =>
+          arr.map((s: Session) => ({
             ...s,
             candidate: s.candidate || s.candidateId,
             candidateIdInfo: s.candidateId,
@@ -241,7 +241,7 @@ export default function EnhancedProDashboard() {
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3">
                         {(() => {
-                          const cand = (sessionItem as any).candidate || (sessionItem as any).candidateId || sessionItem.candidateIdInfo;
+                          const cand = sessionItem.candidate || sessionItem.candidateId || sessionItem.candidateIdInfo;
                           return (
                             <div className={`w-10 h-10 ${getAvatarGradient(index)} rounded-full flex items-center justify-center text-white font-bold overflow-hidden`}>
                               {cand?.profileImageUrl ? (
@@ -258,7 +258,7 @@ export default function EnhancedProDashboard() {
                         })()}
                         <div>
                           {(() => {
-                            const cand = (sessionItem as any).candidate || (sessionItem as any).candidateId || sessionItem.candidateIdInfo;
+                            const cand = sessionItem.candidate || sessionItem.candidateId || sessionItem.candidateIdInfo;
                             return (
                               <>
                                 <h3 className="font-semibold text-gray-900">{cand?.name || 'Unknown'}</h3>
@@ -331,7 +331,7 @@ export default function EnhancedProDashboard() {
                         <div className="flex justify-between items-center">
                           <div className="flex items-center space-x-3">
                             {(() => {
-                              const cand = (sessionItem as any).candidate || (sessionItem as any).candidateId || sessionItem.candidateIdInfo;
+                              const cand = sessionItem.candidate || sessionItem.candidateId || sessionItem.candidateIdInfo;
                               return (
                                 <div className={`w-8 h-8 ${getAvatarGradient(index + 1)} rounded-full flex items-center justify-center text-white font-bold text-sm overflow-hidden`}>
                                   {cand?.profileImageUrl ? (
@@ -344,7 +344,7 @@ export default function EnhancedProDashboard() {
                             })()}
                             <div>
                               {(() => {
-                                const cand = (sessionItem as any).candidate || (sessionItem as any).candidateId || sessionItem.candidateIdInfo;
+                                const cand = sessionItem.candidate || sessionItem.candidateId || sessionItem.candidateIdInfo;
                                 return (
                                   <>
                                     <h4 className="font-medium text-gray-900 text-sm">{cand?.name || 'Unknown'}</h4>
@@ -383,7 +383,7 @@ export default function EnhancedProDashboard() {
                         <div className="flex justify-between items-center">
                           <div className="flex items-center space-x-3">
                             {(() => {
-                              const cand = (sessionItem as any).candidate || (sessionItem as any).candidateId || sessionItem.candidateIdInfo;
+                              const cand = sessionItem.candidate || sessionItem.candidateId || sessionItem.candidateIdInfo;
                               return (
                                 <div className={`w-8 h-8 ${getAvatarGradient(index + 2)} rounded-full flex items-center justify-center text-white font-bold text-sm overflow-hidden`}>
                                   {cand?.profileImageUrl ? (
@@ -396,7 +396,7 @@ export default function EnhancedProDashboard() {
                             })()}
                             <div>
                               {(() => {
-                                const cand = (sessionItem as any).candidate || (sessionItem as any).candidateId || sessionItem.candidateIdInfo;
+                                const cand = sessionItem.candidate || sessionItem.candidateId || sessionItem.candidateIdInfo;
                                 return (
                                   <>
                                     <h4 className="font-medium text-gray-900 text-sm">{cand?.name || 'Unknown'}</h4>
@@ -475,7 +475,7 @@ export default function EnhancedProDashboard() {
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3">
                           {(() => {
-                            const cand = (sessionItem as any).candidate || (sessionItem as any).candidateId || sessionItem.candidateIdInfo;
+                            const cand = sessionItem.candidate || sessionItem.candidateId || sessionItem.candidateIdInfo;
                             return (
                               <div className={`w-8 h-8 ${getAvatarGradient(index + 3)} rounded-full flex items-center justify-center text-white font-bold text-sm overflow-hidden`}>
                                 {cand?.profileImageUrl ? (
@@ -488,7 +488,7 @@ export default function EnhancedProDashboard() {
                           })()}
                           <div>
                             {(() => {
-                              const cand = (sessionItem as any).candidate || (sessionItem as any).candidateId || sessionItem.candidateIdInfo;
+                              const cand = sessionItem.candidate || sessionItem.candidateId || sessionItem.candidateIdInfo;
                               return (
                                 <>
                                   <h4 className="font-medium text-gray-900">{cand?.name || 'Unknown'}</h4>
@@ -527,7 +527,7 @@ export default function EnhancedProDashboard() {
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3">
                           {(() => {
-                            const cand = (sessionItem as any).candidate || (sessionItem as any).candidateId || sessionItem.candidateIdInfo;
+                            const cand = sessionItem.candidate || sessionItem.candidateId || sessionItem.candidateIdInfo;
                             return (
                               <div className={`w-8 h-8 ${getAvatarGradient(index + 4)} rounded-full flex items-center justify-center text-white font-bold text-sm overflow-hidden`}>
                                 {cand?.profileImageUrl ? (
@@ -540,7 +540,7 @@ export default function EnhancedProDashboard() {
                           })()}
                           <div>
                             {(() => {
-                              const cand = (sessionItem as any).candidate || (sessionItem as any).candidateId || sessionItem.candidateIdInfo;
+                              const cand = sessionItem.candidate || sessionItem.candidateId || sessionItem.candidateIdInfo;
                               return (
                                 <>
                                   <h4 className="font-medium text-gray-900">{cand?.name || 'Unknown'}</h4>
@@ -565,7 +565,15 @@ export default function EnhancedProDashboard() {
       <Modal
         isOpen={!!acceptModal}
         onClose={() => setAcceptModal(null)}
-        title={acceptModal ? `Select Time for ${(acceptModal as any).candidate?.name || (acceptModal as any).candidateIdInfo?.name || 'Candidate'}` : ''}
+        title={acceptModal ? `Select Time for ${
+          typeof acceptModal.candidate === 'string'
+            ? acceptModal.candidate
+            : acceptModal.candidate?.name ||
+              (typeof acceptModal.candidateIdInfo === 'string'
+                ? acceptModal.candidateIdInfo
+                : acceptModal.candidateIdInfo?.name) ||
+              'Candidate'
+        }` : ''}
         subtitle="Choose a time from candidate's availability"
         maxWidth="lg"
         actions={
@@ -610,7 +618,18 @@ export default function EnhancedProDashboard() {
         <Modal
           isOpen={!!feedbackModal}
           onClose={() => setFeedbackModal(null)}
-        title={feedbackModal ? `Submit Feedback for ${(feedbackModal as any).candidate?.name || (feedbackModal as any).candidateIdInfo?.name || (feedbackModal as any).candidateId?.name || 'Candidate'}` : ''}
+        title={feedbackModal ? `Submit Feedback for ${
+          typeof feedbackModal.candidate === 'string'
+            ? feedbackModal.candidate
+            : feedbackModal.candidate?.name ||
+              (typeof feedbackModal.candidateIdInfo === 'string'
+                ? feedbackModal.candidateIdInfo
+                : feedbackModal.candidateIdInfo?.name) ||
+              (typeof feedbackModal.candidateId === 'string'
+                ? feedbackModal.candidateId
+                : (feedbackModal.candidateId as { name?: string })?.name) ||
+              'Candidate'
+        }` : ''}
         subtitle={feedbackModal ? `Session on ${formatLongDate(feedbackModal.scheduledAt || '')}` : ''}
           maxWidth="3xl"
           actions={
@@ -637,7 +656,7 @@ export default function EnhancedProDashboard() {
               {/* Candidate Header */}
               <div className="flex items-center space-x-4">
                 {(() => {
-                  const cand = (feedbackModal as any).candidate || (feedbackModal as any).candidateIdInfo || (feedbackModal as any).candidateId;
+                  const cand = feedbackModal.candidate || feedbackModal.candidateIdInfo || feedbackModal.candidateId;
                   return (
                     <div className={`w-12 h-12 ${getAvatarGradient(0)} rounded-full flex items-center justify-center text-white font-bold overflow-hidden`}>
                       {cand?.profileImageUrl ? (
@@ -650,7 +669,7 @@ export default function EnhancedProDashboard() {
                 })()}
                 <div>
                   {(() => {
-                    const cand = (feedbackModal as any).candidate || (feedbackModal as any).candidateIdInfo || (feedbackModal as any).candidateId;
+                    const cand = feedbackModal.candidate || feedbackModal.candidateIdInfo || feedbackModal.candidateId;
                     return (
                       <>
                         <h4 className="text-lg font-semibold text-gray-900">{cand?.name || 'Candidate'}</h4>
