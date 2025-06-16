@@ -9,7 +9,6 @@ import {
   dateFnsLocalizer,
   Views,
   SlotInfo,
-  Event,
 } from 'react-big-calendar';
 import {
   format,
