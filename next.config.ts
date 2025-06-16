@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["react-big-calendar"]
+  // Transpile ESM packages that ship uncompiled code
+  transpilePackages: [
+    "react-big-calendar",
+    "next-auth"
+  ]
 };
 
 export default nextConfig;
