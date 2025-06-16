@@ -26,10 +26,8 @@ export default function SetupPage() {
   useEffect(() => {
     if (!session?.user?.role) return;
 
-    if (session.user.role === 'candidate') {
-      router.replace('/candidate/dashboard');
-    } else if (session.user.role === 'professional') {
-      router.replace('/professional/dashboard');
+    if (session.user.role === 'candidate' || session.user.role === 'professional') {
+      router.replace('/dashboard');
     }
   }, [session?.user?.role, router]);
 

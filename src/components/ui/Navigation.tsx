@@ -57,8 +57,8 @@ export default function Navigation({
       return (
         <div className="flex items-center space-x-4">
           {showDashboardLink && (
-            <Link 
-              href={variant === 'candidate' ? '/candidate/dashboard' : '/professional/dashboard'}
+            <Link
+              href="/dashboard"
               className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
             >
               Dashboard
@@ -76,7 +76,7 @@ export default function Navigation({
           
           {variant === 'professional' && (
             <Link
-              href="/professional/dashboard#candidates"
+              href="/dashboard#candidates"
               className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
             >
               Browse Candidates
