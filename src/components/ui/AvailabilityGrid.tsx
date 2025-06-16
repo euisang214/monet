@@ -77,7 +77,7 @@ export default function AvailabilityGrid({ startDate, days, initialSelected, onC
     }
 
     setEvents(next);
-    onChange?.(new Set(next.map((e) => e.start.toISOString())));
+    onChange?.(new Set(next.map((e) => e.start!.toISOString())));
   };
 
   const handleNavigate = (date: Date) => {
