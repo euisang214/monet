@@ -100,6 +100,21 @@ export async function loadEnhancedMockData() {
       schoolEmailVerified: true,
       linkedinUrl: 'https://linkedin.com/in/euisang-lee',
       clubs: 'Finance Society, Investment Club'
+    },
+    {
+      email: 'victoriagehh@gmail.com',
+      name: 'Victoria Geh',
+      role: 'candidate',
+      school: 'Columbia',
+      major: 'Finance',
+      graduationYear: '2024',
+      targetRole: 'Investment Banking Analyst',
+      targetIndustry: 'Investment Banking',
+      offerBonusCents: 20000, // $200
+      schoolEmail: 'vg2425@columbia.edu',
+      schoolEmailVerified: true,
+      linkedinUrl: 'https://linkedin.com/in/euisang-lee',
+      clubs: 'Finance Society, Investment Club'
     }
   ]);
 
@@ -432,6 +447,34 @@ export async function loadEnhancedMockData() {
     },
     {
       candidateId: candidates[3]._id,
+      professionalId: professionals[4]._id,
+      firmId: 'J.P. Morgan',
+      scheduledAt: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+      durationMinutes: 45,
+      rateCents: 12000,
+      status: 'requested',
+      requestMessage: 'Hi Alex, excited to learn about TMT banking at JPM.',
+      isFirstChatAtFirm: true,
+      stripePaymentIntentId: 'pi_mock_euisang_pending_1',
+    },
+
+    // Upcoming sessions for Victoria
+    {
+      candidateId: candidates[4]._id,
+      professionalId: professionals[0]._id,
+      firmId: 'Goldman Sachs',
+      scheduledAt: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000),
+      durationMinutes: 30,
+      rateCents: 15000,
+      status: 'confirmed',
+      isFirstChatAtFirm: true,
+      zoomJoinUrl: 'https://zoom.us/j/mockeui123',
+      zoomMeetingId: 'mockeui123',
+      stripePaymentIntentId: 'pi_mock_euisang_confirmed_1',
+      paidAt: new Date(),
+    },
+    {
+      candidateId: candidates[4]._id,
       professionalId: professionals[4]._id,
       firmId: 'J.P. Morgan',
       scheduledAt: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
