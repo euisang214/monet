@@ -254,6 +254,7 @@ export async function apiRequest<T>(
 ): Promise<{ success: boolean; data?: T; error?: string }> {
   try {
     const response = await fetch(url, {
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
