@@ -102,8 +102,6 @@ export default function ProfessionalDirectory() {
     return null;
   }
 
-  console.log(professionals);
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation variant="candidate" showDashboardLink={true} />

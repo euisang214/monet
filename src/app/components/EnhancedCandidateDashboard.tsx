@@ -115,8 +115,6 @@ export default function EnhancedCandidateDashboard() {
 
         // API now returns only confirmed upcoming sessions
         setUpcomingSessions(upcomingNormalized);
-        console.log("Upcoming");
-        console.log(sessionsResult);
         setPendingSessions(pendingNormalized);
       }
 
