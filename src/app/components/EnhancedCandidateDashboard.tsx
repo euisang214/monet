@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { formatDate, formatTime, getAvatarGradient, apiRequest } from '@/lib/utils';
+import type { FreeBusyResponse } from '@/lib/calendar';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Modal from '@/components/ui/Modal';
 import Navigation from '@/components/ui/Navigation';
@@ -203,7 +204,7 @@ export default function EnhancedCandidateDashboard() {
 
   const fetchDefaultAvailability = async () => {
     try {
-      const result = await apiRequest<{ calendars: Record<string, { busy: { start: string; end: string }[] }> }>(
+      const result = await apiRequest<FreeBusyResponse>(
         '/api/calendar/freebusy'
       );
       const busy = result.success ? result.data?.calendars?.primary?.busy || [] : [];

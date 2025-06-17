@@ -275,15 +275,20 @@ export async function deleteCalendarEvent(
 /**
  * Get user's free/busy information for availability checking
  */
+export interface FreeBusyResponse {
+  calendars: Record<string, { busy: { start: string; end: string }[] }>;
+}
+
 export async function getFreeBusyInfo(
   accessToken: string,
   timeMin: Date,
   timeMax: Date,
   calendarIds: string[] = ['primary']
-): Promise<Record<string, unknown>> {
+): Promise<FreeBusyResponse> {
   const requestBody = {
     timeMin: timeMin.toISOString(),
     timeMax: timeMax.toISOString(),
+    timeZone: 'UTC',
     items: calendarIds.map(id => ({ id })),
   };
 
@@ -306,8 +311,14 @@ export async function getFreeBusyInfo(
       
       throw new Error(`Failed to get free/busy info: ${error.error?.message || response.statusText}`);
     }
+    const data: FreeBusyResponse = await response.json();
 
-    return await response.json();
+    if (!data.calendars) {
+      console.warn('Google Calendar free/busy response missing calendars field');
+      data.calendars = {} as FreeBusyResponse['calendars'];
+    }
+
+    return data;
   } catch (error) {
     console.error('Error getting free/busy info:', error);
     throw error;
