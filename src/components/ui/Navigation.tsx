@@ -19,9 +19,7 @@ export default function Navigation({
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const handleSignOut = async () => {
-    await signOut({ 
-      callbackUrl: '/' 
-    });
+    await signOut();
   };
 
   const renderPublicLinks = () => (

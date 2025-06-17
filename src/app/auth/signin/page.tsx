@@ -2,37 +2,22 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { signIn, getSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import Navigation from "@/components/ui/Navigation";
 
 export default function SignInPage() {
   const [loading, setLoading] = useState<string | null>(null);
-  const router = useRouter();
 
   const handleSocialSignIn = async (provider: 'google' | 'linkedin') => {
     setLoading(provider);
-    
+
     try {
-      const result = await signIn(provider, { 
-        redirect: false,
-        callbackUrl: '/auth/setup' // Redirect to role selection after OAuth
+      await signIn(provider, {
+        callbackUrl: '/auth/setup'
       });
-      
-      if (result?.ok) {
-        // Check if user needs to complete profile setup
-        const session = await getSession();
-        if (session?.user) {
-          // Redirect based on user role or to setup if new user
-          router.push('/auth/setup');
-        }
-      } else if (result?.error) {
-        alert('Failed to sign in. Please try again.');
-      }
     } catch (error) {
       console.error('Sign in error:', error);
       alert('Failed to sign in. Please try again.');
-    } finally {
       setLoading(null);
     }
   };
