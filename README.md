@@ -383,8 +383,8 @@ stacks/
 
 ## 🔄 Calendar Integration
 
--### Google Calendar Sync
-- **OAuth scope**: `https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly`
+### Google Calendar Sync
+ - **OAuth scope**: `https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.freebusy`
 - **Free/busy queries** for availability checking
 - **Automatic event creation** for confirmed sessions
 - **Manual availability** editing with override capability

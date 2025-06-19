@@ -11,7 +11,7 @@ export const authOptions: NextAuthOptions = {
       authorization: {
         params: {
           scope:
-            'openid email profile https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly'
+            'openid email profile https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.freebusy'
         }
       }
     }),
